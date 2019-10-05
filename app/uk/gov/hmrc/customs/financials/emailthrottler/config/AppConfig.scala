@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customsfinancialsemailthrottler.controllers
+package uk.gov.hmrc.customs.financials.emailthrottler.config
 
 import javax.inject.{Inject, Singleton}
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.customsfinancialsemailthrottler.config.AppConfig
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import play.api.Configuration
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-import scala.concurrent.Future
+@Singleton
+class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig) {
 
-@Singleton()
-class FooController @Inject()(appConfig: AppConfig, cc: ControllerComponents)
-    extends BackendController(cc) {
-
-  def scheduleEmail(): Action[AnyContent] = Action.async { implicit request =>
-    Future.successful(Ok("Hello world"))
-  }
+  val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
+  val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")
 }

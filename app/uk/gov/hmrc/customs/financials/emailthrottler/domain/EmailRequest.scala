@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customsfinancialsemailthrottler.config
+package uk.gov.hmrc.customs.financials.emailthrottler.domain
 
-import javax.inject.{Inject, Singleton}
-import play.api.Configuration
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import play.api.libs.json.{Json, OFormat}
 
-@Singleton
-class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig) {
+case class EmailRequest(to: List[EmailAddress],
+                        templateId: String,
+                        parameters: Map[String, String],
+                        force: Boolean,
+                        eventUrl: Option[String],
+                        onSendUrl: Option[String])
 
-  val authBaseUrl: String = servicesConfig.baseUrl("auth")
-
-  val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
-  val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")
+object EmailRequest {
+  implicit val format: OFormat[EmailRequest] = Json.format[EmailRequest]
 }

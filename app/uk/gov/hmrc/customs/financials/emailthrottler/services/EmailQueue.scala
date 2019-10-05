@@ -14,22 +14,25 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customsfinancialsemailthrottler.services
+package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import javax.inject.{Inject, Singleton}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.customsfinancialsemailthrottler.config.AppConfig
-import uk.gov.hmrc.customsfinancialsemailthrottler.domain.EmailRequest
+import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
+import uk.gov.hmrc.customs.financials.emailthrottler.domain.EmailRequest
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 @Singleton
 class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: AppConfig)
   extends ReactiveRepository[EmailRequest, BSONObjectID](
-    collectionName = "dataStore",
+    collectionName = "emailQueue",
     mongo = mongoComponent.mongoConnector.db,
     domainFormat = EmailRequest.format,
     idFormat = ReactiveMongoFormats.objectIdFormats) {
 
+    def enqueue(emailRequest: EmailRequest) = {
+
+    }
 }
