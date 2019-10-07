@@ -62,6 +62,14 @@ class EmailThrottlerControllerSpec extends WordSpec with Matchers with MockitoSu
       await(controller.enqueueEmail()(fakeRequest))
       verify(mockEmailQueue).enqueue(ArgumentMatchers.any())
     }
+
+    "respond Bad Request to invalid request" in new EmailThrottlerScenario {
+      val  invalidRequestBody= Json.parse("{}")
+      val invalidRequest = FakeRequest("POST", "/", FakeHeaders(), invalidRequestBody)
+      val result = controller.enqueueEmail()(invalidRequest)
+      status(result) shouldBe Status.BAD_REQUEST
+    }
+
   }
 
 }
