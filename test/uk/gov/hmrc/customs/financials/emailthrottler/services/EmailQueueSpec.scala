@@ -16,33 +16,55 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
+import org.mockito.ArgumentMatchers
 import org.scalatest.WordSpec
 import org.scalatestplus.mockito.MockitoSugar
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
+import uk.gov.hmrc.customs.financials.emailthrottler.domain.EmailRequest
 import uk.gov.hmrc.mongo.MongoConnector
+import org.mockito.Mockito.{spy, verify, when}
 
 //noinspection TypeAnnotation
 class EmailQueueSpec extends WordSpec with MockitoSugar {
 
+  import scala.concurrent.ExecutionContext.Implicits.global
+
   val mockAppconfig = mock[AppConfig]
+  val mockDateTimeService = mock[DateTimeService]
+  when(mockDateTimeService.getTimeStamp).thenCallRealMethod()
 
   val reactiveMongoComponent = new ReactiveMongoComponent {
     val mongoUri = "mongodb://127.0.0.1:27017/test-customs-email-throttler"
+
     override def mongoConnector: MongoConnector = MongoConnector(mongoUri)
   }
 
-  val emailQueue = new EmailQueue(reactiveMongoComponent, mockAppconfig)
+  val emailQueue = new EmailQueue(reactiveMongoComponent, mockAppconfig, mockDateTimeService)
+  val spyEmailQueue = spy(emailQueue)
 
   "EmailQueue" should {
 
-    "store emailRequest" in {
-      pending
+    "enqueue email request" should {
+
+      "insert email job into collection" in {
+        val emailRequest = EmailRequest(List.empty, "", Map.empty, force = false, None, None)
+
+        spyEmailQueue.enqueue(emailRequest)
+
+        verify(spyEmailQueue).insert(ArgumentMatchers.any())(ArgumentMatchers.any())
+      }
+
+      "audit requests and insert result" in {
+        pending
+      }
+
+      "audit queue length" in {
+        pending
+      }
+
     }
 
-    "audit queue length" in {
-      pending
-    }
   }
 
 }

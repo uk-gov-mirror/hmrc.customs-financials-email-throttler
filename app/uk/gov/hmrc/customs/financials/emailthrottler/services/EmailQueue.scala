@@ -20,19 +20,33 @@ import javax.inject.{Inject, Singleton}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
-import uk.gov.hmrc.customs.financials.emailthrottler.domain.EmailRequest
+import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success}
+
 @Singleton
-class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: AppConfig)
-  extends ReactiveRepository[EmailRequest, BSONObjectID](
+class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: AppConfig, dateTimeService: DateTimeService)(implicit ec: ExecutionContext)
+  extends ReactiveRepository[SendEmailJob, BSONObjectID](
     collectionName = "emailQueue",
     mongo = mongoComponent.mongoConnector.db,
-    domainFormat = EmailRequest.format,
+    domainFormat = SendEmailJob.format,
     idFormat = ReactiveMongoFormats.objectIdFormats) {
 
-    def enqueue(emailRequest: EmailRequest) = {
+  def enqueue(emailRequest: EmailRequest): Unit = {
 
+    val timeStamp = dateTimeService.getTimeStamp
+    val result = insert(SendEmailJob(emailRequest, timeStamp, processed = false))
+
+    result.onComplete {
+      // audit request and insert result
+      case Failure(e) => e.printStackTrace()
+      case Success(writeResult) =>
+        println(s"successfully inserted document with result: $writeResult")
     }
+
+    ()
+  }
 }
