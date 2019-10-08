@@ -64,7 +64,7 @@ class AuditingService @Inject()(appConfig: AppConfig, auditConnector: Financials
   }
 }
 import uk.gov.hmrc.play.bootstrap.config.RunMode
-class FinancialsAuditConnector @Inject() (configuration: Configuration, environment: Environment) extends AuditConnector {
-  override lazy val auditingConfig: AuditingConfig = new AuditingConfigProvider(configuration, new RunMode(configuration, environment.mode), s"auditing").get()
+class FinancialsAuditConnector @Inject() (configuration: Configuration, environment: Environment, appConfig: AppConfig) extends AuditConnector {
+  override lazy val auditingConfig: AuditingConfig = new AuditingConfigProvider(configuration, new RunMode(configuration, environment.mode), appConfig.appName).get()
 }
 
