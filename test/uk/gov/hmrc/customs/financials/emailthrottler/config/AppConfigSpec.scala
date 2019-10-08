@@ -26,7 +26,7 @@ class AppConfigSpec extends WordSpec with Matchers {
   val configuration: Configuration = Configuration.load(environment)
   val runMode = new RunMode(configuration, environment.mode)
   val servicesConfig = new ServicesConfig(configuration, runMode)
-  val appConfig = new AppConfig(configuration, servicesConfig)
+  val appConfig = new AppConfig(configuration, servicesConfig, environment)
 
   "AppConfig" should {
 
