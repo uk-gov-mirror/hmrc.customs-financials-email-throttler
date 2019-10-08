@@ -17,12 +17,18 @@
 package uk.gov.hmrc.customs.financials.emailthrottler.config
 
 import javax.inject.{Inject, Singleton}
-import play.api.Configuration
+import play.api.{Configuration, Environment, Mode}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 @Singleton
-class AppConfig @Inject()(config: Configuration, servicesConfig: ServicesConfig) {
+class AppConfig @Inject()(val config: Configuration, servicesConfig: ServicesConfig, environment: Environment) {
 
-  val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
-  val graphiteHost: String     = config.get[String]("microservice.metrics.graphite.host")
+  lazy val appName = servicesConfig.getString("appName")
+
+  protected def mode: Mode = environment.mode
+
+  val auditingEnabled: Boolean = servicesConfig.getBoolean("auditing.enabled")
+  val graphiteHost: String = servicesConfig.getString("microservice.metrics.graphite.host")
+
+  lazy val sendEmailUrl = servicesConfig.baseUrl("email") + "/hmrc/email"
 }
