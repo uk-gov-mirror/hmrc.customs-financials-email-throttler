@@ -17,10 +17,8 @@
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import javax.inject.{Inject, Singleton}
-import org.joda.time.DateTime
 import play.api.{Configuration, Environment, Logger, LoggerLike}
 import play.api.http.HeaderNames
-import play.api.libs.json.{Json, Writes}
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 import uk.gov.hmrc.customs.financials.emailthrottler.domain.AuditModel
 import uk.gov.hmrc.http.HeaderCarrier
@@ -28,7 +26,7 @@ import uk.gov.hmrc.play.audit.AuditExtensions
 import uk.gov.hmrc.play.audit.http.config.AuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.http.connector.AuditResult.{Disabled, Failure, Success}
-import uk.gov.hmrc.play.audit.model.{DataEvent, ExtendedDataEvent}
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.play.bootstrap.config.AuditingConfigProvider
 
 import scala.concurrent.{ExecutionContext, Future}

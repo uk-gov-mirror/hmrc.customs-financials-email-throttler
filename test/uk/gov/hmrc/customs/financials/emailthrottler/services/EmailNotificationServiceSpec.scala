@@ -77,6 +77,7 @@ class EmailNotificationServiceSpec extends MockAuditingService with MockitoSugar
       await(emailNotificationService.sendEmail(request)) mustBe false
     }
 
+
     "audit the request" in new EmailNotificationServiceScenario  {
       val request = EmailRequest(List("toAddress"), "templateId", Map.empty, false, Some("url"), Some("url"))
       val expectedAuditRequest = Json.toJson(request)
