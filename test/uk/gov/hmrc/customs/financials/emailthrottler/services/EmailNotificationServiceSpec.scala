@@ -16,37 +16,37 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
+import uk.gov.hmrc.customs.financials.emailthrottler.domain.{AuditModel, EmailRequest}
 import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers._
-import org.scalatest.WordSpec
-import org.scalatestplus.mockito.MockitoSugar
 import org.mockito.Mockito.{verify, when}
 import org.mockito.invocation.InvocationOnMock
-import play.api.http.Status
 import org.scalatest.MustMatchers
-import play.api.libs.json.Json
-import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
-import uk.gov.hmrc.customs.financials.emailthrottler.domain.{AuditModel, EmailRequest}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpException, HttpResponse}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import play.api.http.Status
+import play.api.libs.json.{JsString, Json}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.http.{HeaderCarrier, HttpException, HttpResponse}
+import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
-import scala.concurrent.duration._
+//import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-class EmailNotificationServiceSpec extends MockAuditingService with MockitoSugar with MustMatchers with FutureAwaits with DefaultAwaitTimeout {
+class EmailNotificationServiceSpec extends MockAuditingService with MockitoAnswerSugar with MustMatchers with FutureAwaits with DefaultAwaitTimeout {
 
   trait EmailNotificationServiceScenario {
     implicit val mockAppConfig = mock[AppConfig]
     implicit val mockHttpClient: HttpClient = mock[HttpClient]
-//    implicit val mockAuditConnector: AuditConnector = mock[AuditConnector]
+
+    val mockMetricsReporterService = mock[MetricsReporterService]
+    when(mockMetricsReporterService.withResponseTimeLogging(any())(any())(any()))
+      .thenAnswer((i: InvocationOnMock) => {i.getArgument[Future[JsString]](1)})
 
 
     implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
     implicit val hc: HeaderCarrier = HeaderCarrier()
 
-    val emailNotificationService = new EmailNotificationService(mockHttpClient, mockAuditingService)
+    val emailNotificationService = new EmailNotificationService(mockHttpClient, mockMetricsReporterService, mockAuditingService)
   }
 
   "sendEmail" should {

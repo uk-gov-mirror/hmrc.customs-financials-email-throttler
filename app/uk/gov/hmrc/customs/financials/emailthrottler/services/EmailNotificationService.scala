@@ -28,7 +28,7 @@ import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class EmailNotificationService @Inject()( http: HttpClient,   auditService: AuditingService)
+class EmailNotificationService @Inject()( http: HttpClient, metricsReporter: MetricsReporterService, auditService: AuditingService)
                                         ( implicit appConfig: AppConfig, ec: ExecutionContext ) {
 
   val AUDIT_EMAIL_REQUEST = "CUSTOMSFINANCIALSEMAIL"
@@ -39,17 +39,17 @@ class EmailNotificationService @Inject()( http: HttpClient,   auditService: Audi
   def sendEmail( request: EmailRequest)( implicit hc: HeaderCarrier ): Future[Boolean] = {
 
     // TODO: Add Feature switch
-    // TODO: Add metrics reporting
-    // TODO: Add auditing/splunk
+    metricsReporter.withResponseTimeLogging("email.post.send-email") {
       auditService.audit(AuditModel(AUDIT_EMAIL_REQUEST, Json.toJson(request), AUDIT_TYPE))
-    http.POST[EmailRequest, HttpResponse](appConfig.sendEmailUrl, request).collect {
-      case response if (response.status == Status.ACCEPTED) => log.info(s"[SendEmail] Successful for ${request.to}")
-        true
-      case response => log.warn(s"[SendEmail] Failed for ${request.to} with status - ${response.status} error - ${response.body}")
-        false
-    }.recoverWith {
-      case ex: Throwable => log.warn(s"[SendEmail] Received an exception with message - ${ex.getMessage()}")
-        Future.successful(false)
+      http.POST[EmailRequest, HttpResponse](appConfig.sendEmailUrl, request).collect {
+        case response if (response.status == Status.ACCEPTED) => log.info(s"[SendEmail] Successful for ${request.to}")
+          true
+        case response => log.warn(s"[SendEmail] Failed for ${request.to} with status - ${response.status} error - ${response.body}")
+          false
+      }.recoverWith {
+        case ex: Throwable => log.warn(s"[SendEmail] Received an exception with message - ${ex.getMessage()}")
+          Future.successful(false)
+      }
     }
   }
 
