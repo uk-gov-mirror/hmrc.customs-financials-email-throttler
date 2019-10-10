@@ -47,10 +47,9 @@ class EmailNotificationServiceSpec extends MockAuditingService with MockitoAnswe
     implicit val hc: HeaderCarrier = HeaderCarrier()
 
     val emailNotificationService = new EmailNotificationService(mockHttpClient, mockMetricsReporterService, mockAuditingService)
-  }
 
-  // We're testing emails
-  FeatureSwitch.EmailNotifications.enable()
+    FeatureSwitch.EmailNotifications.enable()
+  }
 
   "sendEmail" should {
     "send the email request" in new EmailNotificationServiceScenario {

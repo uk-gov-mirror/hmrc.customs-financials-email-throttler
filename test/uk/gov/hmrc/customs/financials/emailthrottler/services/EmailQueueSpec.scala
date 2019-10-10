@@ -16,21 +16,24 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
+import java.time.{OffsetDateTime, ZoneOffset}
+
 import org.mockito.ArgumentMatchers
-import org.scalatest.WordSpec
+import org.mockito.Mockito.{spy, verify, when}
+import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
-import uk.gov.hmrc.customs.financials.emailthrottler.domain.EmailRequest
+import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
 import uk.gov.hmrc.mongo.MongoConnector
-import org.mockito.Mockito.{spy, verify, when}
 
 //noinspection TypeAnnotation
-class EmailQueueSpec extends WordSpec with MockitoSugar {
+class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with DefaultAwaitTimeout with BeforeAndAfterEach with MustMatchers {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  val mockAppconfig = mock[AppConfig]
+  val mockAppConfig = mock[AppConfig]
   val mockDateTimeService = mock[DateTimeService]
   when(mockDateTimeService.getTimeStamp).thenCallRealMethod()
 
@@ -40,8 +43,11 @@ class EmailQueueSpec extends WordSpec with MockitoSugar {
     override def mongoConnector: MongoConnector = MongoConnector(mongoUri)
   }
 
-  val emailQueue = new EmailQueue(reactiveMongoComponent, mockAppconfig, mockDateTimeService)
-  val spyEmailQueue = spy(emailQueue)
+  val emailQueue = new EmailQueue(reactiveMongoComponent, mockAppConfig, mockDateTimeService)
+
+  override def beforeEach: Unit = {
+    await(emailQueue.removeAll())
+  }
 
   "EmailQueue" should {
 
@@ -49,6 +55,7 @@ class EmailQueueSpec extends WordSpec with MockitoSugar {
 
       "insert email job into collection" in {
         val emailRequest = EmailRequest(List.empty, "", Map.empty, force = false, None, None)
+        val spyEmailQueue = spy(emailQueue)
 
         spyEmailQueue.enqueue(emailRequest)
 
@@ -61,6 +68,38 @@ class EmailQueueSpec extends WordSpec with MockitoSugar {
 
       "audit queue length" in {
         pending
+      }
+
+      "get oldest, not processed, send email job" in {
+        when(mockDateTimeService.getTimeStamp)
+          .thenReturn(OffsetDateTime.of(2019,10,8,15,1,0,0,ZoneOffset.UTC))
+          .thenReturn(OffsetDateTime.of(2019,10,8,15,2,0,0,ZoneOffset.UTC))
+          .thenReturn(OffsetDateTime.of(2019,10,8,15,3,0,0,ZoneOffset.UTC))
+
+        val emailRequests = Seq(
+          EmailRequest(List.empty, "id_1", Map.empty, force = false, None, None),
+          EmailRequest(List.empty, "id_2", Map.empty, force = false, None, None),
+          EmailRequest(List.empty, "id_3", Map.empty, force = false, None, None)
+        )
+        emailRequests.foreach(emailQueue.enqueue)
+
+        val expectedEmailJob = SendEmailJob(
+          EmailRequest(List.empty, "id_1", Map.empty, force = false, None, None),
+          OffsetDateTime.of(2019,10,8,15,1,0,0,ZoneOffset.UTC),
+          processed = true
+        )
+
+        val job = await(emailQueue.getNextEmailJob())
+        job mustBe Some(expectedEmailJob)
+
+        val expectedEmailJob2 = SendEmailJob(
+          EmailRequest(List.empty, "id_2", Map.empty, force = false, None, None),
+          OffsetDateTime.of(2019,10,8,15,2,0,0,ZoneOffset.UTC),
+          processed = true
+        )
+
+        val job2 = await(emailQueue.getNextEmailJob())
+        job2 mustBe Some(expectedEmailJob2)
       }
 
     }

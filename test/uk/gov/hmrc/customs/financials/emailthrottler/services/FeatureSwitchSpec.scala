@@ -16,10 +16,9 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
-import org.scalatest.{AppendedClues, BeforeAndAfterEach}
-import org.scalatestplus.play.{OneServerPerSuite, PlaySpec}
+import org.scalatest.{AppendedClues, BeforeAndAfterEach, MustMatchers, WordSpec}
 
-class FeatureSwitchSpec extends PlaySpec with OneServerPerSuite with BeforeAndAfterEach with AppendedClues {
+class FeatureSwitchSpec extends WordSpec with BeforeAndAfterEach with MustMatchers with AppendedClues {
 
   override def beforeEach: Unit = {
     System.clearProperty("features.email-notifications")

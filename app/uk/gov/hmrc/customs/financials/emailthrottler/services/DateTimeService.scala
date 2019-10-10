@@ -16,8 +16,7 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
-import java.time.format.DateTimeFormatter
-import java.time.{Instant, LocalDate, OffsetDateTime, ZoneOffset}
+import java.time.{Instant, OffsetDateTime, ZoneOffset}
 
 import javax.inject.Singleton
 

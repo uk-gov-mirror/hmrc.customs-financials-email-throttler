@@ -22,7 +22,7 @@ import com.codahale.metrics.{Histogram, MetricRegistry}
 import com.kenshoo.play.metrics.Metrics
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{verify, when}
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import play.api.http.Status
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}

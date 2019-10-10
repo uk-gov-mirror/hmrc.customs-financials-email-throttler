@@ -18,7 +18,7 @@ package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.PlaySpec
 import play.api.{Configuration, Environment}
 import play.api.libs.json.JsNull

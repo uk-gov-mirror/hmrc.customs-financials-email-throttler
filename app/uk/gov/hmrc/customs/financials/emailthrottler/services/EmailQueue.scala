@@ -17,14 +17,17 @@
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import javax.inject.{Inject, Singleton}
+import play.api.libs.json.{JsObject, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
+import reactivemongo.play.json.commands.JSONFindAndModifyCommand.FindAndModifyResult
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 @Singleton
@@ -35,18 +38,49 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
     domainFormat = SendEmailJob.format,
     idFormat = ReactiveMongoFormats.objectIdFormats) {
 
-  def enqueue(emailRequest: EmailRequest): Unit = {
+  //TODO: only recreate index if it does not exists
+  override def indexes = Seq(
+    Index(Seq("timeStampAndCRL" -> IndexType.Ascending), name = Some("timestampIndex"), unique = true, sparse = true)
+  )
+
+  def enqueue(emailRequest: EmailRequest): Future[Unit] = {
 
     val timeStamp = dateTimeService.getTimeStamp
     val result = insert(SendEmailJob(emailRequest, timeStamp, processed = false))
 
     result.onComplete {
-      // audit request and insert result
+      // TODO: audit request and insert result
       case Failure(e) => e.printStackTrace()
       case Success(writeResult) =>
-        println(s"successfully inserted document with result: $writeResult")
+        logger.info(s"Successfully enqueued send email job:  $timeStamp : $emailRequest")
     }
 
-    ()
+    Future.successful(())
   }
+
+  def getNextEmailJob(): Future[Option[SendEmailJob]] = {
+
+    val result = findAndUpdate(
+        query = Json.obj("processed" -> Json.toJsFieldJsValueWrapper(false)),
+        update = Json.obj("$set" -> Json.obj("processed" -> Json.toJsFieldJsValueWrapper(true))),
+        sort = Some(Json.obj("timeStampAndCRL" -> Json.toJsFieldJsValueWrapper(1))),
+        fetchNewObject = true
+    )
+
+    result.onComplete {
+      // TODO: audit request and insert result
+      case Success(FindAndModifyResult(Some(_),Some(value))) =>
+        logger.info(s"Successfully fetched latest send email job: $value")
+      case m =>
+        logger.error(s"Unexpected mongo response: $m")
+    }
+
+    result.map(_.result[SendEmailJob])
+  }
+
+  def delete(id: JsObject): Future[Unit] = {
+    //TODO: implement this
+    Future.successful(())
+  }
+
 }
