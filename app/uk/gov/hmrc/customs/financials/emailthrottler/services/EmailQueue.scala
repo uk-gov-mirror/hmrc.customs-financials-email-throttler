@@ -35,18 +35,16 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
   extends ReactiveRepository[SendEmailJob, BSONObjectID](
     collectionName = "emailQueue",
     mongo = mongoComponent.mongoConnector.db,
-    domainFormat = SendEmailJob.format,
+    domainFormat = SendEmailJob.formatSendEmailJob,
     idFormat = ReactiveMongoFormats.objectIdFormats) {
 
-  //TODO: only recreate index if it does not exists
-  override def indexes = Seq(
-    Index(Seq("timeStampAndCRL" -> IndexType.Ascending), name = Some("timestampIndex"), unique = true, sparse = true)
-  )
+  collection.indexesManager.ensure(Index(Seq("timeStampAndCRL" -> IndexType.Ascending),
+    name = Some("timestampIndex"), unique = true, background = true, sparse = true))
 
   def enqueueJob(emailRequest: EmailRequest): Future[Unit] = {
 
     val timeStamp = dateTimeService.getTimeStamp
-    val result = insert(SendEmailJob(emailRequest, timeStamp, processed = false))
+    val result = insert(SendEmailJob(BSONObjectID.generate, emailRequest, timeStamp, processing = false))
 
     result.onComplete {
       // TODO: audit request and insert result
@@ -61,8 +59,8 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
   def nextJob: Future[Option[SendEmailJob]] = {
 
     val result = findAndUpdate(
-        query = Json.obj("processed" -> Json.toJsFieldJsValueWrapper(false)),
-        update = Json.obj("$set" -> Json.obj("processed" -> Json.toJsFieldJsValueWrapper(true))),
+        query = Json.obj("processing" -> Json.toJsFieldJsValueWrapper(false)),
+        update = Json.obj("$set" -> Json.obj("processing" -> Json.toJsFieldJsValueWrapper(true))),
         sort = Some(Json.obj("timeStampAndCRL" -> Json.toJsFieldJsValueWrapper(1))),
         fetchNewObject = true
     )
@@ -79,9 +77,8 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
     result.map(_.result[SendEmailJob])
   }
 
-  def deleteJob(id: JsObject): Future[Unit] = {
-    //TODO: implement this
-    Future.successful(())
+  def deleteJob(id: BSONObjectID): Future[Unit] = {
+    removeById(id).map(_=>())
   }
 
 }

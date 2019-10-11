@@ -24,6 +24,7 @@ import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
 import uk.gov.hmrc.mongo.MongoConnector
@@ -85,24 +86,13 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
         )
         await(Future.sequence(emailRequests.map(emailQueue.enqueueJob)))
 
-        val expectedEmailJob = SendEmailJob(
-          EmailRequest(List.empty, "id_1", Map.empty, force = false, None, None),
-          OffsetDateTime.of(2019,10,8,15,1,0,0,ZoneOffset.UTC),
-          processed = true
-        )
-
+        val expectedEmailRequest = EmailRequest(List.empty, "id_1", Map.empty, force = false, None, None)
         val job = await(emailQueue.nextJob)
+        job.map(_.emailRequest) mustBe Some(expectedEmailRequest)
 
-        job mustBe Some(expectedEmailJob)
-
-        val expectedEmailJob2 = SendEmailJob(
-          EmailRequest(List.empty, "id_2", Map.empty, force = false, None, None),
-          OffsetDateTime.of(2019,10,8,15,2,0,0,ZoneOffset.UTC),
-          processed = true
-        )
-
+        val expectedEmailRequest2 = EmailRequest(List.empty, "id_2", Map.empty, force = false, None, None)
         val job2 = await(emailQueue.nextJob)
-        job2 mustBe Some(expectedEmailJob2)
+        job2.map(_.emailRequest) mustBe Some(expectedEmailRequest2)
       }
 
     }

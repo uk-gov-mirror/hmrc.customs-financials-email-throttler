@@ -23,6 +23,7 @@ import org.mockito.Mockito.{verify, when}
 import org.scalatest.WordSpec
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -35,9 +36,10 @@ class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits w
   class MockedEmailJobHandlerScenario()(implicit ec: ExecutionContext) {
 
     val sendEmailJob = SendEmailJob(
+      BSONObjectID.generate,
       EmailRequest(List.empty, "id_1", Map.empty, force = false, None, None),
       OffsetDateTime.of(2019,10,8,15,1,0,0,ZoneOffset.UTC),
-      processed = true
+      processing = true
     )
 
     val mockEmailQueue = mock[EmailQueue]

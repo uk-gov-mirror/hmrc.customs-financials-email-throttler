@@ -17,8 +17,6 @@
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import javax.inject.Singleton
-import play.api.libs.json.Json
-import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -38,8 +36,7 @@ class EmailJobHandler(emailQueue: EmailQueue, emailNotificationService: EmailNot
       job <- emailQueue.nextJob if job.isDefined
       emailRequest = job.get.emailRequest
       _ <- emailNotificationService.sendEmail(emailRequest)
-      //TODO: decide how to delete completed job
-      id = Json.obj("_id" -> toJsFieldJsValueWrapper(""""":{"$oid":"5d9ef3135f9c6ebe8d42dfba"}"""))
+      id = job.get._id
       _ <- emailQueue.deleteJob(id)
     } yield ()
 
