@@ -42,8 +42,7 @@ class EmailNotificationServiceSpec extends MockAuditingService with MockitoAnswe
     when(mockMetricsReporterService.withResponseTimeLogging(any())(any())(any()))
       .thenAnswer((i: InvocationOnMock) => {i.getArgument[Future[JsString]](1)})
 
-
-    implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
+    import scala.concurrent.ExecutionContext.Implicits.global
     implicit val hc: HeaderCarrier = HeaderCarrier()
 
     val emailNotificationService = new EmailNotificationService(mockHttpClient, mockMetricsReporterService, mockAuditingService)

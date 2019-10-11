@@ -65,6 +65,14 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
         verify(spyEmailQueue).insert(ArgumentMatchers.any())(ArgumentMatchers.any())
       }
 
+      "delete email job by id" in {
+        val spyEmailQueue = spy(emailQueue)
+
+        spyEmailQueue.deleteJob(BSONObjectID.generate())
+
+        verify(spyEmailQueue).removeById(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
+      }
+
       "audit requests and insert result" in {
         pending
       }

@@ -17,7 +17,7 @@
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import javax.inject.{Inject, Singleton}
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
@@ -42,12 +42,11 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
     name = Some("timestampIndex"), unique = true, background = true, sparse = true))
 
   def enqueueJob(emailRequest: EmailRequest): Future[Unit] = {
-
     val timeStamp = dateTimeService.getTimeStamp
     val result = insert(SendEmailJob(BSONObjectID.generate, emailRequest, timeStamp, processing = false))
 
     result.onComplete {
-      // TODO: audit request and insert result
+      // TODO: audit enqueue job
       case Failure(e) => e.printStackTrace()
       case Success(writeResult) =>
         logger.info(s"Successfully enqueued send email job:  $timeStamp : $emailRequest")
@@ -57,16 +56,14 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
   }
 
   def nextJob: Future[Option[SendEmailJob]] = {
-
     val result = findAndUpdate(
         query = Json.obj("processing" -> Json.toJsFieldJsValueWrapper(false)),
         update = Json.obj("$set" -> Json.obj("processing" -> Json.toJsFieldJsValueWrapper(true))),
         sort = Some(Json.obj("timeStampAndCRL" -> Json.toJsFieldJsValueWrapper(1))),
         fetchNewObject = true
     )
-
     result.onComplete {
-      // TODO: audit request and insert result
+      // TODO: audit processing job
       case Success(FindAndModifyResult(Some(_),Some(value))) =>
         logger.info("id: " + value \ "_id")
         logger.info(s"Successfully fetched latest send email job: $value")
@@ -78,7 +75,14 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
   }
 
   def deleteJob(id: BSONObjectID): Future[Unit] = {
-    removeById(id).map(_=>())
+    val result = removeById(id)
+    result.onComplete {
+      // TODO: audit delete job
+      case Failure(e) => e.printStackTrace()
+      case Success(writeResult) => logger.info(s"Successfully deleted job: $id")
+    }
+
+    result.map(_=>())
   }
 
 }

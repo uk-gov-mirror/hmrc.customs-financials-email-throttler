@@ -20,10 +20,11 @@ import java.time.OffsetDateTime
 
 import play.api.libs.json.{Json, OFormat}
 import reactivemongo.bson.BSONObjectID
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 case class SendEmailJob(_id: BSONObjectID, emailRequest: EmailRequest, timeStampAndCRL: OffsetDateTime, processing: Boolean)
 
 object SendEmailJob {
-  implicit val formatBSONObjectID: OFormat[BSONObjectID] = Json.format[BSONObjectID]
+  import ReactiveMongoFormats.objectIdFormats
   implicit val formatSendEmailJob: OFormat[SendEmailJob] = Json.format[SendEmailJob]
 }

@@ -23,8 +23,13 @@ import org.mockito.Mockito.{verify, when}
 import org.scalatest.WordSpec
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+import play.api.{Configuration, Environment, Mode}
+import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.BSONObjectID
+import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
+import uk.gov.hmrc.mongo.MongoConnector
+import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -78,6 +83,33 @@ class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits w
         verify(mockEmailQueue).deleteJob(ArgumentMatchers.any())
       }
 
+      "integration" in {
+        val env           = Environment.simple()
+        val configuration = Configuration.load(env)
+        val serviceConfig = new ServicesConfig(configuration, new RunMode(configuration, Mode.Dev))
+        val appConfig     = new AppConfig(configuration, serviceConfig, env)
+        val dateTimeService = new DateTimeService
+        val reactiveMongoComponent = new ReactiveMongoComponent {
+          val mongoUri = "mongodb://127.0.0.1:27017/test-customs-email-throttler"
+          override def mongoConnector: MongoConnector = MongoConnector(mongoUri)
+        }
+        val emailQueue = new EmailQueue(reactiveMongoComponent, appConfig, dateTimeService)
+        await(emailQueue.removeAll())
+
+        val emailRequests = Seq(
+          EmailRequest(List.empty, "id_1", Map.empty, force = false, None, None),
+          EmailRequest(List.empty, "id_2", Map.empty, force = false, None, None),
+          EmailRequest(List.empty, "id_3", Map.empty, force = false, None, None)
+        )
+        emailRequests.foreach(request => await(emailQueue.enqueueJob(request)))
+
+        val mockEmailNotificationService = mock[EmailNotificationService]
+        when(mockEmailNotificationService.sendEmail(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(true))
+        val service = new EmailJobHandler(emailQueue, mockEmailNotificationService)
+
+        await(service.processJob())
+        await(service.processJob())
+      }
     }
 
     "numberOfEmailsPerSecond" in {
