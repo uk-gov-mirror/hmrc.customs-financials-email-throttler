@@ -18,23 +18,23 @@ package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
+import org.scalatest.{MustMatchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatestplus.play.PlaySpec
-import play.api.{Configuration, Environment}
 import play.api.libs.json.JsNull
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+import play.api.{Configuration, Environment}
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 import uk.gov.hmrc.customs.financials.emailthrottler.domain.AuditModel
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditResult
+import scala.concurrent.Future
 
-import scala.concurrent.{ExecutionContext, Future}
-
-class AuditingServiceSpec extends PlaySpec with MockitoSugar with DefaultAwaitTimeout with FutureAwaits{
+//noinspection TypeAnnotation
+class AuditingServiceSpec extends WordSpec with MockitoSugar with DefaultAwaitTimeout with FutureAwaits with MustMatchers {
 
   val mockAppConfig = mock[AppConfig]
   val mockAuditConnector = mock[FinancialsAuditConnector]
-  implicit val ec: ExecutionContext = play.api.libs.concurrent.Execution.Implicits.defaultContext
+  import scala.concurrent.ExecutionContext.Implicits.global
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   "AuditingService" should {

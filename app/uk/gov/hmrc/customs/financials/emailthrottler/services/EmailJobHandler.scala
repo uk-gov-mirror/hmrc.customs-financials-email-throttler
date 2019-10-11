@@ -16,15 +16,12 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
-import akka.actor.Cancellable
-import akka.stream.scaladsl.Source
 import javax.inject.Singleton
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
 
 
 @Singleton
@@ -33,19 +30,18 @@ class EmailJobHandler(emailQueue: EmailQueue, emailNotificationService: EmailNot
   val numberOfEmailsPerSecond = 0.5
 //  val source: Source[Future[Unit], Cancellable] = Source.tick(initialDelay = 0 second, interval = 1/numberOfEmailsPerSecond second, tick = processEmailJob())
 
-  def processEmailJob(): Future[Unit] = {
+  def processJob(): Future[Unit] = {
     //TODO: get hc from request
     implicit val hc = new HeaderCarrier(None, None)
 
     for {
-      job <- emailQueue.getNextEmailJob() if job.isDefined
+      job <- emailQueue.nextJob if job.isDefined
       emailRequest = job.get.emailRequest
       _ <- emailNotificationService.sendEmail(emailRequest)
       //TODO: decide how to delete completed job
       id = Json.obj("_id" -> toJsFieldJsValueWrapper(""""":{"$oid":"5d9ef3135f9c6ebe8d42dfba"}"""))
-      _ <- emailQueue.delete(id)
+      _ <- emailQueue.deleteJob(id)
     } yield ()
 
-    Future.successful(())
   }
 }

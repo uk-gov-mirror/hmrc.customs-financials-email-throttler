@@ -59,7 +59,7 @@ class EmailThrottlerControllerSpec extends WordSpec with Matchers with MockitoSu
 
     "ask EmailQueue service to store emails" in new EmailThrottlerScenario {
       await(controller.enqueueEmail()(fakeRequest))
-      verify(mockEmailQueue).enqueue(ArgumentMatchers.any())
+      verify(mockEmailQueue).enqueueJob(ArgumentMatchers.any())
     }
 
     "respond Bad Request to invalid request" in new EmailThrottlerScenario {

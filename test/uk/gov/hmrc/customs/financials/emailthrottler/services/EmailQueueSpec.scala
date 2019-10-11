@@ -28,6 +28,8 @@ import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
 import uk.gov.hmrc.mongo.MongoConnector
 
+import scala.concurrent.Future
+
 //noinspection TypeAnnotation
 class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with DefaultAwaitTimeout with BeforeAndAfterEach with MustMatchers {
 
@@ -57,7 +59,7 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
         val emailRequest = EmailRequest(List.empty, "", Map.empty, force = false, None, None)
         val spyEmailQueue = spy(emailQueue)
 
-        spyEmailQueue.enqueue(emailRequest)
+        spyEmailQueue.enqueueJob(emailRequest)
 
         verify(spyEmailQueue).insert(ArgumentMatchers.any())(ArgumentMatchers.any())
       }
@@ -81,7 +83,7 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
           EmailRequest(List.empty, "id_2", Map.empty, force = false, None, None),
           EmailRequest(List.empty, "id_3", Map.empty, force = false, None, None)
         )
-        emailRequests.foreach(emailQueue.enqueue)
+        await(Future.sequence(emailRequests.map(emailQueue.enqueueJob)))
 
         val expectedEmailJob = SendEmailJob(
           EmailRequest(List.empty, "id_1", Map.empty, force = false, None, None),
@@ -89,7 +91,8 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
           processed = true
         )
 
-        val job = await(emailQueue.getNextEmailJob())
+        val job = await(emailQueue.nextJob)
+
         job mustBe Some(expectedEmailJob)
 
         val expectedEmailJob2 = SendEmailJob(
@@ -98,7 +101,7 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
           processed = true
         )
 
-        val job2 = await(emailQueue.getNextEmailJob())
+        val job2 = await(emailQueue.nextJob)
         job2 mustBe Some(expectedEmailJob2)
       }
 

@@ -18,6 +18,7 @@ package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import java.time.{OffsetDateTime, ZoneOffset}
 
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.WordSpec
 import org.scalatestplus.mockito.MockitoSugar
@@ -26,6 +27,7 @@ import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendE
 
 import scala.concurrent.{ExecutionContext, Future}
 
+//noinspection TypeAnnotation
 class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits with DefaultAwaitTimeout {
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -39,9 +41,11 @@ class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits w
     )
 
     val mockEmailQueue = mock[EmailQueue]
-    when(mockEmailQueue.getNextEmailJob()).thenReturn(Future.successful(Some(sendEmailJob)))
+    when(mockEmailQueue.nextJob).thenReturn(Future.successful(Some(sendEmailJob)))
+    when(mockEmailQueue.deleteJob(ArgumentMatchers.any())).thenReturn(Future.successful(()))
 
     val mockEmailNotificationService = mock[EmailNotificationService]
+    when(mockEmailNotificationService.sendEmail(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(true))
 
     val service = new EmailJobHandler(mockEmailQueue, mockEmailNotificationService)
 
@@ -49,13 +53,27 @@ class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits w
 
   "EmailJobHandlerSpec" should {
 
-    "sendEmail" should {
+    "process job" should {
 
       "fetch job from email queue" in new MockedEmailJobHandlerScenario {
 
-        await(service.processEmailJob())
+        await(service.processJob())
 
-        verify(mockEmailQueue).getNextEmailJob()
+        verify(mockEmailQueue).nextJob
+      }
+
+      "ask email notification service to send email" in new MockedEmailJobHandlerScenario {
+
+        await(service.processJob())
+
+        verify(mockEmailNotificationService).sendEmail(ArgumentMatchers.any())(ArgumentMatchers.any())
+      }
+
+      "ask email queue to delete completed job" in new MockedEmailJobHandlerScenario {
+
+        await(service.processJob())
+
+        verify(mockEmailQueue).deleteJob(ArgumentMatchers.any())
       }
 
     }

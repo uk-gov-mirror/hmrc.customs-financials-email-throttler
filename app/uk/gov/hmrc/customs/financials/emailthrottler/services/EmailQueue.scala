@@ -43,7 +43,7 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
     Index(Seq("timeStampAndCRL" -> IndexType.Ascending), name = Some("timestampIndex"), unique = true, sparse = true)
   )
 
-  def enqueue(emailRequest: EmailRequest): Future[Unit] = {
+  def enqueueJob(emailRequest: EmailRequest): Future[Unit] = {
 
     val timeStamp = dateTimeService.getTimeStamp
     val result = insert(SendEmailJob(emailRequest, timeStamp, processed = false))
@@ -55,10 +55,10 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
         logger.info(s"Successfully enqueued send email job:  $timeStamp : $emailRequest")
     }
 
-    Future.successful(())
+    result.map(_=>())
   }
 
-  def getNextEmailJob(): Future[Option[SendEmailJob]] = {
+  def nextJob: Future[Option[SendEmailJob]] = {
 
     val result = findAndUpdate(
         query = Json.obj("processed" -> Json.toJsFieldJsValueWrapper(false)),
@@ -70,6 +70,7 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
     result.onComplete {
       // TODO: audit request and insert result
       case Success(FindAndModifyResult(Some(_),Some(value))) =>
+        logger.info("id: " + value \ "_id")
         logger.info(s"Successfully fetched latest send email job: $value")
       case m =>
         logger.error(s"Unexpected mongo response: $m")
@@ -78,7 +79,7 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
     result.map(_.result[SendEmailJob])
   }
 
-  def delete(id: JsObject): Future[Unit] = {
+  def deleteJob(id: JsObject): Future[Unit] = {
     //TODO: implement this
     Future.successful(())
   }
