@@ -20,6 +20,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.{Configuration, Environment, Mode}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+//noinspection TypeAnnotation
 @Singleton
 class AppConfig @Inject()(val config: Configuration, servicesConfig: ServicesConfig, environment: Environment) {
 
@@ -31,4 +32,7 @@ class AppConfig @Inject()(val config: Configuration, servicesConfig: ServicesCon
   val graphiteHost: String = servicesConfig.getString("microservice.metrics.graphite.host")
 
   lazy val sendEmailUrl = servicesConfig.baseUrl("email") + "/hmrc/email"
+
+  val defaultNumberOfEmailsPerSecond = 0.1
+  val numberOfEmailsPerSecond = config.getOptional[Double]("numberOfEmailsPerSecond").getOrElse(defaultNumberOfEmailsPerSecond)
 }

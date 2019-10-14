@@ -109,6 +109,8 @@ class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits w
 
         await(service.processJob())
         await(service.processJob())
+
+        reactiveMongoComponent.mongoConnector.close()
       }
     }
 

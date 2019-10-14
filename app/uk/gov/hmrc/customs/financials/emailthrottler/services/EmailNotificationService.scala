@@ -42,13 +42,15 @@ class EmailNotificationService @Inject()( http: HttpClient, metricsReporter: Met
       metricsReporter.withResponseTimeLogging("email.post.send-email") {
         auditService.audit(AuditModel(AUDIT_EMAIL_REQUEST, Json.toJson(request), AUDIT_TYPE))
         http.POST[EmailRequest, HttpResponse](appConfig.sendEmailUrl, request).collect {
-          case response if (response.status == Status.ACCEPTED) => log.info(s"[SendEmail] Successful for ${request.to}")
+          case response if (response.status == Status.ACCEPTED) =>
+            log.info(s"[SendEmail] Successful for ${request.to}")
             true
-          case response => log.warn(s"[SendEmail] Failed for ${request.to} with status - ${response.status} error - ${response.body}")
+          case response =>
+            log.error(s"[SendEmail] Failed for ${request.to} with status - ${response.status} error - ${response.body}")
             false
-        }.recoverWith {
-          case ex: Throwable => log.warn(s"[SendEmail] Received an exception with message - ${ex.getMessage()}")
-            Future.successful(false)
+        }.recover {
+          case ex: Throwable => log.error(s"[SendEmail] Received an exception with message - ${ex.getMessage}")
+            false
         }
       }
     } else {

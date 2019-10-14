@@ -16,28 +16,20 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
+import akka.actor.ActorSystem
 import javax.inject.{Inject, Singleton}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 
-import scala.concurrent.{ExecutionContext, Future}
-
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
 
 @Singleton
-class EmailJobHandler @Inject()(emailQueue: EmailQueue, emailNotificationService: EmailNotificationService)(implicit ec: ExecutionContext) {
+class Scheduler @Inject()(appConfig: AppConfig, emailJobHandler: EmailJobHandler, actorSystem: ActorSystem)(implicit executionContext: ExecutionContext) {
 
-  val numberOfEmailsPerSecond = 0.5
+  val numberOfEmailsPerSecond = appConfig.numberOfEmailsPerSecond
 
-  def processJob(): Future[Unit] = {
-    //TODO: get hc from request
-    implicit val hc = new HeaderCarrier(None, None)
-
-    for {
-      job <- emailQueue.nextJob if job.isDefined
-      emailRequest = job.get.emailRequest
-      _ <- emailNotificationService.sendEmail(emailRequest)
-      id = job.get._id
-      _ <- emailQueue.deleteJob(id)
-    } yield ()
-
+  actorSystem.scheduler.schedule(initialDelay = 0 seconds, interval = 1/numberOfEmailsPerSecond second) {
+    emailJobHandler.processJob()
   }
+
 }

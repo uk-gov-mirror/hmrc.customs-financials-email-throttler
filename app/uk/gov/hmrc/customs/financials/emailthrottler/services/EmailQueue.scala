@@ -22,6 +22,7 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.commands.JSONFindAndModifyCommand.FindAndModifyResult
+import reactivemongo.play.json.commands.JSONFindAndModifyCommand.UpdateLastError
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
 import uk.gov.hmrc.mongo.ReactiveRepository
@@ -65,8 +66,9 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
     result.onComplete {
       // TODO: audit processing job
       case Success(FindAndModifyResult(Some(_),Some(value))) =>
-        logger.info("id: " + value \ "_id")
-        logger.info(s"Successfully fetched latest send email job: $value")
+        logger.info(s"Successfully fetched latest send email job: ${value \ "_id"}")
+      case Success(FindAndModifyResult(Some(UpdateLastError(false,None,0,None)),None)) =>
+        logger.info(s"Email Job Queue is empty")
       case m =>
         logger.error(s"Unexpected mongo response: $m")
     }
