@@ -52,7 +52,7 @@ class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits w
     when(mockEmailQueue.deleteJob(ArgumentMatchers.any())).thenReturn(Future.successful(()))
 
     val mockEmailNotificationService = mock[EmailNotificationService]
-    when(mockEmailNotificationService.sendEmail(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(true))
+    when(mockEmailNotificationService.sendEmail(ArgumentMatchers.any())).thenReturn(Future.successful(true))
 
     val service = new EmailJobHandler(mockEmailQueue, mockEmailNotificationService)
 
@@ -73,7 +73,7 @@ class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits w
 
         await(service.processJob())
 
-        verify(mockEmailNotificationService).sendEmail(ArgumentMatchers.any())(ArgumentMatchers.any())
+        verify(mockEmailNotificationService).sendEmail(ArgumentMatchers.any())
       }
 
       "ask email queue to delete completed job" in new MockedEmailJobHandlerScenario {
@@ -93,7 +93,8 @@ class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits w
           val mongoUri = "mongodb://127.0.0.1:27017/test-customs-email-throttler"
           override def mongoConnector: MongoConnector = MongoConnector(mongoUri)
         }
-        val emailQueue = new EmailQueue(reactiveMongoComponent, appConfig, dateTimeService)
+        val metricsReporter = mock[MetricsReporterService]
+        val emailQueue = new EmailQueue(reactiveMongoComponent, appConfig, dateTimeService, metricsReporter)
         await(emailQueue.removeAll())
 
         val emailRequests = Seq(
@@ -104,7 +105,7 @@ class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits w
         emailRequests.foreach(request => await(emailQueue.enqueueJob(request)))
 
         val mockEmailNotificationService = mock[EmailNotificationService]
-        when(mockEmailNotificationService.sendEmail(ArgumentMatchers.any())(ArgumentMatchers.any())).thenReturn(Future.successful(true))
+        when(mockEmailNotificationService.sendEmail(ArgumentMatchers.any())).thenReturn(Future.successful(true))
         val service = new EmailJobHandler(emailQueue, mockEmailNotificationService)
 
         await(service.processJob())

@@ -19,6 +19,7 @@ package uk.gov.hmrc.customs.financials.emailthrottler.services
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.commands.JSONFindAndModifyCommand.FindAndModifyResult
@@ -32,7 +33,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 @Singleton
-class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: AppConfig, dateTimeService: DateTimeService)(implicit ec: ExecutionContext)
+class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
+                           appConfig: AppConfig,
+                           dateTimeService: DateTimeService,
+                           metricsReporter: MetricsReporterService)
+                          (implicit ec: ExecutionContext)
   extends ReactiveRepository[SendEmailJob, BSONObjectID](
     collectionName = "emailQueue",
     mongo = mongoComponent.mongoConnector.db,
@@ -44,12 +49,14 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
 
   def enqueueJob(emailRequest: EmailRequest): Future[Unit] = {
     val timeStamp = dateTimeService.getTimeStamp
-    val result = insert(SendEmailJob(BSONObjectID.generate, emailRequest, timeStamp, processing = false))
 
+    val result: Future[WriteResult] = insert(SendEmailJob(BSONObjectID.generate, emailRequest, timeStamp, processing = false))
     result.onComplete {
-      // TODO: audit enqueue job
-      case Failure(e) => e.printStackTrace()
+      case Failure(error) =>
+        metricsReporter.reportSuccessfulEnqueueJob()
+        logger.error(s"Could not enqueue send email job: ${error.getMessage}")
       case Success(writeResult) =>
+        metricsReporter.reportFailedEnqueueJob()
         logger.info(s"Successfully enqueued send email job:  $timeStamp : $emailRequest")
     }
 
@@ -64,12 +71,13 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
         fetchNewObject = true
     )
     result.onComplete {
-      // TODO: audit processing job
       case Success(FindAndModifyResult(Some(_),Some(value))) =>
-        logger.info(s"Successfully fetched latest send email job: ${value \ "_id"}")
+        metricsReporter.reportSuccessfulMarkJobForProcessing()
+        logger.info(s"Successfully marked latest send email job: ${value}")
       case Success(FindAndModifyResult(Some(UpdateLastError(false,None,0,None)),None)) =>
-        logger.info(s"Email Job Queue is empty")
+        // empty queue, no record was found
       case m =>
+        metricsReporter.reportFailedMarkJobForProcessing()
         logger.error(s"Unexpected mongo response: $m")
     }
 
@@ -79,9 +87,12 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent, appConfig: Ap
   def deleteJob(id: BSONObjectID): Future[Unit] = {
     val result = removeById(id)
     result.onComplete {
-      // TODO: audit delete job
-      case Failure(e) => e.printStackTrace()
-      case Success(writeResult) => logger.info(s"Successfully deleted job: $id")
+      case Success(writeResult) =>
+        metricsReporter.reportSuccessfulRemoveCompletedJob()
+        logger.info(s"Successfully deleted job: $id")
+      case Failure(error) =>
+        metricsReporter.reportFailedRemoveCompletedJob()
+        logger.error(s"Could not delete completed job: $error")
     }
 
     result.map(_=>())

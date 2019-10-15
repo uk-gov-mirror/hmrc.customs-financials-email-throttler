@@ -36,9 +36,10 @@ class EmailNotificationService @Inject()( http: HttpClient, metricsReporter: Met
 
   val log: LoggerLike = Logger(this.getClass)
 
-  def sendEmail( request: EmailRequest)( implicit hc: HeaderCarrier ): Future[Boolean] = {
+  def sendEmail( request: EmailRequest): Future[Boolean] = {
 
     if (FeatureSwitch.EmailNotifications.isEnabled()) {
+      implicit val hc = HeaderCarrier()
       metricsReporter.withResponseTimeLogging("email.post.send-email") {
         auditService.audit(AuditModel(AUDIT_EMAIL_REQUEST, Json.toJson(request), AUDIT_TYPE))
         http.POST[EmailRequest, HttpResponse](appConfig.sendEmailUrl, request).collect {
@@ -49,7 +50,8 @@ class EmailNotificationService @Inject()( http: HttpClient, metricsReporter: Met
             log.error(s"[SendEmail] Failed for ${request.to} with status - ${response.status} error - ${response.body}")
             false
         }.recover {
-          case ex: Throwable => log.error(s"[SendEmail] Received an exception with message - ${ex.getMessage}")
+          case ex: Throwable =>
+            log.error(s"[SendEmail] Received an exception with message - ${ex.getMessage}")
             false
         }
       }

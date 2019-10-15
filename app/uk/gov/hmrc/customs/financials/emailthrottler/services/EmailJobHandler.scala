@@ -17,7 +17,6 @@
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import javax.inject.{Inject, Singleton}
-import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -28,9 +27,6 @@ class EmailJobHandler @Inject()(emailQueue: EmailQueue, emailNotificationService
   val numberOfEmailsPerSecond = 0.5
 
   def processJob(): Future[Unit] = {
-    //TODO: get hc from request
-    implicit val hc = new HeaderCarrier(None, None)
-
     for {
       job <- emailQueue.nextJob if job.isDefined
       emailRequest = job.get.emailRequest
@@ -38,6 +34,6 @@ class EmailJobHandler @Inject()(emailQueue: EmailQueue, emailNotificationService
       id = job.get._id
       _ <- emailQueue.deleteJob(id)
     } yield ()
-
   }
+
 }

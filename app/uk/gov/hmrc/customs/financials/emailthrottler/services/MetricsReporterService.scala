@@ -46,11 +46,41 @@ class MetricsReporterService @Inject()(val metrics: Metrics, dateTimeService: Da
     }
   }
 
-  def updateResponseTimeHistogram(resourceName: String, httpResponseCode: Int,
+  private def updateResponseTimeHistogram(resourceName: String, httpResponseCode: Int,
                                   startTimestamp: OffsetDateTime, endTimestamp: OffsetDateTime): Unit = {
     val RESPONSE_TIMES_METRIC = "responseTimes"
     val histogramName = s"$RESPONSE_TIMES_METRIC.$resourceName.$httpResponseCode"
     val elapsedTimeInMillis = endTimestamp.toInstant.toEpochMilli - startTimestamp.toInstant.toEpochMilli
     metrics.defaultRegistry.histogram(histogramName).update(elapsedTimeInMillis)
   }
+
+  val EMAIL_QUEUE_METRIC = "email-queue"
+
+  def reportSuccessfulEnqueueJob() =  {
+    val counterName = s"$EMAIL_QUEUE_METRIC.enqueue-send-email-job-in-mongo-successful"
+    metrics.defaultRegistry.counter(counterName).inc()
+  }
+  def reportFailedEnqueueJob() =  {
+    val counterName = s"$EMAIL_QUEUE_METRIC.enqueue-send-email-job-in-mongo-failed"
+    metrics.defaultRegistry.counter(counterName).inc()
+  }
+
+  def reportSuccessfulMarkJobForProcessing() =  {
+    val counterName = s"$EMAIL_QUEUE_METRIC.mark-oldest-send-email-job-for-processing-in-mongo-successful"
+    metrics.defaultRegistry.counter(counterName).inc()
+  }
+  def reportFailedMarkJobForProcessing() =  {
+    val counterName = s"$EMAIL_QUEUE_METRIC.mark-oldest-send-email-job-for-processing-in-mongo-failed"
+    metrics.defaultRegistry.counter(counterName).inc()
+  }
+
+  def reportSuccessfulRemoveCompletedJob() =  {
+    val counterName = s"$EMAIL_QUEUE_METRIC.delete-completed-send-email-job-from-mongo-successful"
+    metrics.defaultRegistry.counter(counterName).inc()
+  }
+  def reportFailedRemoveCompletedJob() =  {
+    val counterName = s"$EMAIL_QUEUE_METRIC.delete-completed-send-email-job-from-mongo-failed"
+    metrics.defaultRegistry.counter(counterName).inc()
+  }
+
 }

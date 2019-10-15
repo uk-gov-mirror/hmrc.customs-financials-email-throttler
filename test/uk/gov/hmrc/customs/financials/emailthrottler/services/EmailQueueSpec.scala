@@ -46,7 +46,8 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
     override def mongoConnector: MongoConnector = MongoConnector(mongoUri)
   }
 
-  val emailQueue = new EmailQueue(reactiveMongoComponent, mockAppConfig, mockDateTimeService)
+  val metricsReporter = mock[MetricsReporterService]
+  val emailQueue = new EmailQueue(reactiveMongoComponent, mockAppConfig, mockDateTimeService, metricsReporter)
 
   override def beforeEach: Unit = {
     await(emailQueue.removeAll())

@@ -54,6 +54,27 @@ class MetricsReporterServiceSpec extends PlaySpec with MockitoSugar with FutureA
 
   "MetricsReporterService" should {
 
+    "Email_Queue_METRICS" should {
+      "reportSuccessfulEnqueueJob" in {
+        pending
+      }
+      "reportFailedEnqueueJob" in {
+        pending
+      }
+      "reportSuccessfulMarkJobForProcessing" in {
+        pending
+      }
+      "reportFailedMarkJobForProcessing" in {
+        pending
+      }
+      "reportSuccessfulRemoveCompletedJob" in {
+        pending
+      }
+      "reportFailedRemoveCompletedJob" in {
+        pending
+      }
+    }
+
     "withResponseTimeLogging" should {
 
       "log successful call metrics" in {
