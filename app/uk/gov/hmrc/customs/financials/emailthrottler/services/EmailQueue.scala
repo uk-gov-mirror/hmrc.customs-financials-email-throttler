@@ -75,6 +75,7 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
         metricsReporter.reportSuccessfulMarkJobForProcessing()
         logger.info(s"Successfully marked latest send email job: ${value}")
       case Success(FindAndModifyResult(Some(UpdateLastError(false,None,0,None)),None)) =>
+        logger.info(s"email job queue is empty")
         // empty queue, no record was found
       case m =>
         metricsReporter.reportFailedMarkJobForProcessing()
