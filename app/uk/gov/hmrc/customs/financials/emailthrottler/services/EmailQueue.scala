@@ -53,10 +53,10 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
     val result: Future[WriteResult] = insert(SendEmailJob(BSONObjectID.generate, emailRequest, timeStamp, processing = false))
     result.onComplete {
       case Failure(error) =>
-        metricsReporter.reportSuccessfulEnqueueJob()
-        logger.error(s"Could not enqueue send email job: ${error.getMessage}")
-      case Success(writeResult) =>
         metricsReporter.reportFailedEnqueueJob()
+        logger.error(s"Could not enqueue send email job: ${error.getMessage}")
+      case Success(_) =>
+        metricsReporter.reportSuccessfulEnqueueJob()
         logger.info(s"Successfully enqueued send email job:  $timeStamp : $emailRequest")
     }
 
@@ -73,13 +73,13 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
     result.onComplete {
       case Success(FindAndModifyResult(Some(_),Some(value))) =>
         metricsReporter.reportSuccessfulMarkJobForProcessing()
-        logger.info(s"Successfully marked latest send email job: ${value}")
+        logger.info(s"Successfully marked latest send email job for processing: ${value}")
       case Success(FindAndModifyResult(Some(UpdateLastError(false,None,0,None)),None)) =>
-        logger.info(s"email job queue is empty")
+        // logger.info(s"email job queue is empty")
         // empty queue, no record was found
       case m =>
         metricsReporter.reportFailedMarkJobForProcessing()
-        logger.error(s"Unexpected mongo response: $m")
+        logger.error(s"Marking send email job for processing failed. Unexpected mongo response: $m")
     }
 
     result.map(_.result[SendEmailJob])
@@ -88,12 +88,12 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
   def deleteJob(id: BSONObjectID): Future[Unit] = {
     val result = removeById(id)
     result.onComplete {
-      case Success(writeResult) =>
-        metricsReporter.reportSuccessfulRemoveCompletedJob()
-        logger.info(s"Successfully deleted job: $id")
+      case Success(_) =>
+        metricsReporter.reportSuccessfullyRemoveCompletedJob()
+        logger.info(s"Successfully deleted send email job: $id")
       case Failure(error) =>
-        metricsReporter.reportFailedRemoveCompletedJob()
-        logger.error(s"Could not delete completed job: $error")
+        metricsReporter.reportFailedToRemoveCompletedJob()
+        logger.error(s"Could not delete completed send email job: $error")
     }
 
     result.map(_=>())

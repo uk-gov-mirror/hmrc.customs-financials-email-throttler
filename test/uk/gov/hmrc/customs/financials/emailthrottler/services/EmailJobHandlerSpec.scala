@@ -115,13 +115,5 @@ class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits w
       }
     }
 
-    "numberOfEmailsPerSecond" in {
-      pending
-    }
-
-    "source" in {
-      pending
-    }
-
   }
 }

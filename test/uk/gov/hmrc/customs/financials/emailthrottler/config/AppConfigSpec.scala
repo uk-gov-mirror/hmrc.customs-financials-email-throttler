@@ -38,6 +38,10 @@ class AppConfigSpec extends WordSpec with Matchers {
       appConfig.graphiteHost shouldBe "graphite"
     }
 
+    "have settings for sendEmailUrl" in {
+      appConfig.sendEmailUrl endsWith "/hmrc/email"
+    }
+
   }
 
 }

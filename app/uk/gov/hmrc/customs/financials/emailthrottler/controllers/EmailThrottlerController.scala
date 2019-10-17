@@ -17,6 +17,7 @@
 package uk.gov.hmrc.customs.financials.emailthrottler.controllers
 
 import javax.inject.{Inject, Singleton}
+import play.api.{Logger, LoggerLike}
 import play.api.libs.json.{JsError, JsValue, Json}
 import play.api.mvc.{Action, ControllerComponents}
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
@@ -30,13 +31,17 @@ import scala.concurrent.Future
 class EmailThrottlerController @Inject()(emailQueue: EmailQueue, appConfig: AppConfig, cc: ControllerComponents)
     extends BackendController(cc) {
 
+  val log: LoggerLike = Logger(this.getClass)
+
   def enqueueEmail(): Action[JsValue] = Action.async(parse.json) { implicit request =>
 
     request.body.validate[EmailRequest].fold(
       errors => {
+        log.error(s"enqueueEmail: Bad Request, error: $errors")
         Future.successful(BadRequest(Json.obj("Status" -> "Bad Request", "message" -> JsError.toJson(errors))))
       },
       emailRequest => {
+        log.info(s"enqueueEmail: send email request enqueued")
         emailQueue.enqueueJob(emailRequest)
         Future.successful(Ok(Json.obj("Status" -> "Ok", "message" -> "Email successfully queued")))
       }

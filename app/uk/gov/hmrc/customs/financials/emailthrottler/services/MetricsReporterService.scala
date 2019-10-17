@@ -56,29 +56,29 @@ class MetricsReporterService @Inject()(val metrics: Metrics, dateTimeService: Da
 
   val EMAIL_QUEUE_METRIC = "email-queue"
 
-  def reportSuccessfulEnqueueJob() =  {
+  def reportSuccessfulEnqueueJob(): Unit =  {
     val counterName = s"$EMAIL_QUEUE_METRIC.enqueue-send-email-job-in-mongo-successful"
     metrics.defaultRegistry.counter(counterName).inc()
   }
-  def reportFailedEnqueueJob() =  {
+  def reportFailedEnqueueJob(): Unit =  {
     val counterName = s"$EMAIL_QUEUE_METRIC.enqueue-send-email-job-in-mongo-failed"
     metrics.defaultRegistry.counter(counterName).inc()
   }
 
-  def reportSuccessfulMarkJobForProcessing() =  {
+  def reportSuccessfulMarkJobForProcessing(): Unit =  {
     val counterName = s"$EMAIL_QUEUE_METRIC.mark-oldest-send-email-job-for-processing-in-mongo-successful"
     metrics.defaultRegistry.counter(counterName).inc()
   }
-  def reportFailedMarkJobForProcessing() =  {
+  def reportFailedMarkJobForProcessing(): Unit =  {
     val counterName = s"$EMAIL_QUEUE_METRIC.mark-oldest-send-email-job-for-processing-in-mongo-failed"
     metrics.defaultRegistry.counter(counterName).inc()
   }
 
-  def reportSuccessfulRemoveCompletedJob() =  {
+  def reportSuccessfullyRemoveCompletedJob(): Unit =  {
     val counterName = s"$EMAIL_QUEUE_METRIC.delete-completed-send-email-job-from-mongo-successful"
     metrics.defaultRegistry.counter(counterName).inc()
   }
-  def reportFailedRemoveCompletedJob() =  {
+  def reportFailedToRemoveCompletedJob(): Unit =  {
     val counterName = s"$EMAIL_QUEUE_METRIC.delete-completed-send-email-job-from-mongo-failed"
     metrics.defaultRegistry.counter(counterName).inc()
   }
