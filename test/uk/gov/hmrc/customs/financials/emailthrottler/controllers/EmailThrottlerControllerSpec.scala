@@ -54,7 +54,7 @@ class EmailThrottlerControllerSpec extends WordSpec with Matchers with MockitoSu
 
     "handle enqueue request" in new EmailThrottlerScenario {
       val result = controller.enqueueEmail()(fakeRequest)
-      status(result) shouldBe Status.OK
+      status(result) shouldBe Status.ACCEPTED
     }
 
     "ask EmailQueue service to store emails" in new EmailThrottlerScenario {
