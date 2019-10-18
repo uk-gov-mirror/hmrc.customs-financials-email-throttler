@@ -43,7 +43,7 @@ class EmailThrottlerController @Inject()(emailQueue: EmailQueue, appConfig: AppC
       emailRequest => {
         log.info(s"enqueueEmail: send email request enqueued")
         emailQueue.enqueueJob(emailRequest)
-        Future.successful(Ok(Json.obj("Status" -> "Ok", "message" -> "Email successfully queued")))
+        Future.successful(Accepted(Json.obj("Status" -> "Ok", "message" -> "Email successfully queued")))
       }
     )
 
