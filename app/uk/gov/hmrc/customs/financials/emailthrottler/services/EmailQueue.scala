@@ -23,7 +23,7 @@ import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.commands.JSONFindAndModifyCommand.FindAndModifyResult
-import reactivemongo.play.json.commands.JSONFindAndModifyCommand.UpdateLastError
+import reactivemongo.api.commands.FindAndModifyCommand.UpdateLastError
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
 import uk.gov.hmrc.mongo.ReactiveRepository

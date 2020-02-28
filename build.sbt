@@ -26,3 +26,5 @@ lazy val scoverageSettings = Seq(
   ScoverageKeys.coverageFailOnMinimum := true,
   ScoverageKeys.coverageHighlighting := true
 )
+
+dependencyOverrides ++= AppDependencies.overrides
