@@ -26,7 +26,7 @@ import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
-import uk.gov.hmrc.customs.financials.emailthrottler.domain.EmailRequest
+import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailAddress, EmailRequest}
 import uk.gov.hmrc.mongo.MongoConnector
 
 import scala.concurrent.Future
@@ -51,6 +51,15 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
 
   override def beforeEach: Unit = {
     await(emailQueue.removeAll())
+  }
+
+  "EmailAddress" should {
+
+    "obfuscate toString" in {
+      val emailAddress = EmailAddress("test@nowhere")
+
+      assert(emailAddress.toString() == "************")
+    }
   }
 
   "EmailQueue" should {

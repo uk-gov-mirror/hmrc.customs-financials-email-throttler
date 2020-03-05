@@ -22,8 +22,6 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
-import reactivemongo.play.json.commands.JSONFindAndModifyCommand.FindAndModifyResult
-import reactivemongo.api.commands.FindAndModifyCommand.UpdateLastError
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
 import uk.gov.hmrc.mongo.ReactiveRepository
@@ -64,25 +62,25 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
   }
 
   def nextJob: Future[Option[SendEmailJob]] = {
-    val result = findAndUpdate(
+    val eventualResult = findAndUpdate(
         query = Json.obj("processing" -> Json.toJsFieldJsValueWrapper(false)),
         update = Json.obj("$set" -> Json.obj("processing" -> Json.toJsFieldJsValueWrapper(true))),
         sort = Some(Json.obj("timeStampAndCRL" -> Json.toJsFieldJsValueWrapper(1))),
         fetchNewObject = true
     )
-    result.onComplete {
-      case Success(FindAndModifyResult(Some(_),Some(value))) =>
-        metricsReporter.reportSuccessfulMarkJobForProcessing()
-        logger.info(s"Successfully marked latest send email job for processing: ${value}")
-      case Success(FindAndModifyResult(Some(UpdateLastError(false,None,0,None)),None)) =>
-        // logger.info(s"email job queue is empty")
-        // empty queue, no record was found
+
+    eventualResult.onComplete {
+      case Success(result) if(result.value.isDefined) =>
+          metricsReporter.reportSuccessfulMarkJobForProcessing()
+          logger.info(s"Successfully marked latest send email job for processing: ${result.result[SendEmailJob]}")
+      case Success(result) if(result.lastError.isDefined && result.lastError.get.err.isEmpty) =>
+          logger.debug(s"email queue is empty")
       case m =>
         metricsReporter.reportFailedMarkJobForProcessing()
-        logger.error(s"Marking send email job for processing failed. Unexpected mongo response: $m")
+        logger.error(s"Marking send email job for processing failed. Unexpected MongoDB error: $m")
     }
 
-    result.map(_.result[SendEmailJob])
+    eventualResult.map(_.result[SendEmailJob])
   }
 
   def deleteJob(id: BSONObjectID): Future[Unit] = {

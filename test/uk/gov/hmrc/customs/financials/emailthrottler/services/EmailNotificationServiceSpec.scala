@@ -16,21 +16,19 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
-import uk.gov.hmrc.customs.financials.emailthrottler.domain.{AuditModel, EmailRequest}
-import org.mockito.ArgumentMatchers
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito.{verify, when}
+import org.mockito.ArgumentMatchers.{eq => is, _}
+import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.scalatest.MustMatchers
 import play.api.http.Status
 import play.api.libs.json.{JsString, Json}
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpException, HttpResponse}
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
+import uk.gov.hmrc.customs.financials.emailthrottler.domain.{AuditModel, EmailAddress, EmailRequest}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpException, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
-//import scala.concurrent.duration._
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.Future
 
 class EmailNotificationServiceSpec extends MockAuditingService with MockitoAnswerSugar with MustMatchers with FutureAwaits with DefaultAwaitTimeout {
 
@@ -53,26 +51,27 @@ class EmailNotificationServiceSpec extends MockAuditingService with MockitoAnswe
   "sendEmail" should {
     "send the email request" in new EmailNotificationServiceScenario {
 
-      val request = EmailRequest(List("toAddress"), "templateId", Map.empty, false, Some("url"), Some("url"))
+      val request = EmailRequest(List(EmailAddress("toAddress")), "templateId")
 
-      when[Future[HttpResponse]](mockHttpClient.POST(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(any(), any(), any(), any()))
+      when[Future[HttpResponse]](mockHttpClient.POST(any(), is(request), any())(any(), any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(Status.ACCEPTED)))
+
       await(emailNotificationService.sendEmail(request)) mustBe true
     }
 
     "fail to send the email request" in new EmailNotificationServiceScenario {
-      val request = EmailRequest(List("incorrectEmailAddress"), "templateId", Map.empty, false, Some("url"), Some("url"))
+      val request = EmailRequest(List(EmailAddress("incorrectEmailAddress")), "templateId")
 
-      when[Future[HttpResponse]](mockHttpClient.POST(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(any(), any(), any(), any()))
+      when[Future[HttpResponse]](mockHttpClient.POST(any(), any(), any())(any(), any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(Status.BAD_REQUEST)))
 
       await(emailNotificationService.sendEmail(request)) mustBe false
     }
 
     "recover from exception" in new EmailNotificationServiceScenario {
-      val request = EmailRequest(List("incorrectEmailAddress"), "templateId", Map.empty, false, Some("url"), Some("url"))
+      val request = EmailRequest(List(EmailAddress("incorrectEmailAddress")), "templateId")
 
-      when[Future[HttpResponse]](mockHttpClient.POST(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(any(), any(), any(), any()))
+      when[Future[HttpResponse]](mockHttpClient.POST(any(), any(), any())(any(), any(), any(), any()))
         .thenReturn(Future.failed(new HttpException("Internal server error", Status.INTERNAL_SERVER_ERROR)))
 
       await(emailNotificationService.sendEmail(request)) mustBe false
@@ -80,10 +79,10 @@ class EmailNotificationServiceSpec extends MockAuditingService with MockitoAnswe
 
 
     "audit the request" in new EmailNotificationServiceScenario  {
-      val request = EmailRequest(List("toAddress"), "templateId", Map.empty, false, Some("url"), Some("url"))
+      val request = EmailRequest(List(EmailAddress("toAddress")), "templateId")
       val expectedAuditRequest = Json.toJson(request)
 
-      when[Future[HttpResponse]](mockHttpClient.POST(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any())(any(), any(), any(), any()))
+      when[Future[HttpResponse]](mockHttpClient.POST(any(), any(), any())(any(), any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(Status.ACCEPTED)))
 
       await(emailNotificationService.sendEmail(request))
