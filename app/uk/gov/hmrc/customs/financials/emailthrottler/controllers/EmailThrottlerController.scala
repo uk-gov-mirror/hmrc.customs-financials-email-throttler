@@ -33,6 +33,8 @@ class EmailThrottlerController @Inject()(emailQueue: EmailQueue, appConfig: AppC
 
   val log: LoggerLike = Logger(this.getClass)
 
+  log.info("Service started")
+
   def enqueueEmail(): Action[JsValue] = Action.async(parse.json) { implicit request =>
 
     request.body.validate[EmailRequest].fold(
