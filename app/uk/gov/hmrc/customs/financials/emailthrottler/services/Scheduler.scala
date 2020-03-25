@@ -22,14 +22,14 @@ import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 @Singleton
 class Scheduler @Inject()(appConfig: AppConfig, emailJobHandler: EmailJobHandler, actorSystem: ActorSystem)(implicit executionContext: ExecutionContext) {
 
-  val numberOfEmailsPerSecond = appConfig.numberOfEmailsPerSecond
+  val emailsPerInstancePerSecond = appConfig.emailsPerInstancePerSecond
 
-  actorSystem.scheduler.schedule(initialDelay = 0 seconds, interval = 1/numberOfEmailsPerSecond second) {
-    emailJobHandler.processJob()
-  }
+  def emailJobRunnable: Runnable = new Runnable { override def run(): Unit = emailJobHandler.processJob() }
 
+  actorSystem.scheduler.schedule(initialDelay = 0 seconds, interval = 1/emailsPerInstancePerSecond second, emailJobRunnable)
 }

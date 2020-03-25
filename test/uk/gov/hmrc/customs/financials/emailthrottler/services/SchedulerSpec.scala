@@ -17,39 +17,34 @@
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import akka.actor.ActorSystem
+import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 
+import scala.concurrent.ExecutionContext.Implicits
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
 class SchedulerSpec extends WordSpec with MockitoSugar with Matchers {
 
   "Scheduler" should {
 
-    import scala.concurrent.ExecutionContext.Implicits.global
-
     "schedule email sending" in {
-
+      implicit val ec: ExecutionContextExecutor = Implicits.global
       val mockAppConfig = mock[AppConfig]
-      when(mockAppConfig.numberOfEmailsPerSecond).thenReturn(0.2)
+      when(mockAppConfig.emailsPerInstancePerSecond).thenReturn(0.2)
       val mockEmailJobHandler = mock[EmailJobHandler]
       val mockActorSystem = mock[ActorSystem]
       val mockScheduler = mock[akka.actor.Scheduler]
+
       when(mockActorSystem.scheduler).thenReturn(mockScheduler)
 
       new Scheduler(mockAppConfig, mockEmailJobHandler, mockActorSystem)
 
-      // TODO: fix test, mockito fail to match call by name arguments :(
-//      verify(mockScheduler.schedule(
-//        ArgumentMatchers.eq(0 seconds),
-//        ArgumentMatchers.eq(5 second))
-//      (ArgumentMatchers.anyObject())
-//      (ArgumentMatchers.any())
-//      )
-
-      verify(mockActorSystem).scheduler
+      verify(mockScheduler).schedule(ArgumentMatchers.eq(0 seconds), ArgumentMatchers.eq(5 seconds), ArgumentMatchers.any[Runnable]())(ArgumentMatchers.eq(ec))
     }
-
   }
-
 }

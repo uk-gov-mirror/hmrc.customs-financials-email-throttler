@@ -33,6 +33,6 @@ class AppConfig @Inject()(val config: Configuration, servicesConfig: ServicesCon
 
   lazy val sendEmailUrl = servicesConfig.baseUrl("email") + "/hmrc/email"
 
-  val defaultNumberOfEmailsPerSecond = 0.1
-  val numberOfEmailsPerSecond = config.getOptional[Double]("numberOfEmailsPerSecond").getOrElse(defaultNumberOfEmailsPerSecond)
+  val defaultEmailsPerInstancePerSecond = 0.1
+  val emailsPerInstancePerSecond = config.getOptional[Double]("emailsPerInstancePerSecond").getOrElse(defaultEmailsPerInstancePerSecond)
 }
