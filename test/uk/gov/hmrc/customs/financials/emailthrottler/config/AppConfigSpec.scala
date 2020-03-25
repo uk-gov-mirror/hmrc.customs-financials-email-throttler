@@ -42,6 +42,12 @@ class AppConfigSpec extends WordSpec with Matchers {
       appConfig.sendEmailUrl endsWith "/hmrc/email"
     }
 
-  }
+    "have emailsPerInstancePerSecond configured" in {
+      appConfig.emailsPerInstancePerSecond shouldBe 2.5
+    }
 
+    "have defaultEmailsPerInstancePerSecond configured" in {
+      appConfig.defaultEmailsPerInstancePerSecond shouldBe 0.1
+    }
+  }
 }
