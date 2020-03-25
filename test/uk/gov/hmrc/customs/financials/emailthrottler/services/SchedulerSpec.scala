@@ -18,23 +18,22 @@ package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import akka.actor.ActorSystem
 import org.mockito.ArgumentMatchers
-import org.mockito.Mockito.{times, verify, when}
-
-import scala.concurrent.duration._
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.language.postfixOps
 import scala.concurrent.ExecutionContext.Implicits
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 class SchedulerSpec extends WordSpec with MockitoSugar with Matchers {
 
   "Scheduler" should {
 
     "schedule email sending" in {
-      implicit val ec = Implicits.global
+      implicit val ec: ExecutionContextExecutor = Implicits.global
       val mockAppConfig = mock[AppConfig]
       when(mockAppConfig.emailsPerInstancePerSecond).thenReturn(0.2)
       val mockEmailJobHandler = mock[EmailJobHandler]
@@ -42,7 +41,6 @@ class SchedulerSpec extends WordSpec with MockitoSugar with Matchers {
       val mockScheduler = mock[akka.actor.Scheduler]
 
       when(mockActorSystem.scheduler).thenReturn(mockScheduler)
-      when(mockEmailJobHandler.processJob()).thenReturn(Future[Unit]({}))
 
       new Scheduler(mockAppConfig, mockEmailJobHandler, mockActorSystem)
 
