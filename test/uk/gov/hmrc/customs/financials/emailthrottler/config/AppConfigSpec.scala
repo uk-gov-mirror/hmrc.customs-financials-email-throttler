@@ -43,7 +43,7 @@ class AppConfigSpec extends WordSpec with Matchers {
     }
 
     "have emailsPerInstancePerSecond configured" in {
-      appConfig.emailsPerInstancePerSecond shouldBe 2.5
+      appConfig.emailsPerInstancePerSecond shouldBe 5
     }
 
     "have defaultEmailsPerInstancePerSecond configured" in {
