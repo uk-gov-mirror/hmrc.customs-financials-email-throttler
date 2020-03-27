@@ -29,7 +29,7 @@ class Scheduler @Inject()(appConfig: AppConfig, emailJobHandler: EmailJobHandler
 
   val emailsPerInstancePerSecond = appConfig.emailsPerInstancePerSecond
 
-  def emailJobRunnable: Runnable = new Runnable { override def run(): Unit = emailJobHandler.processJob() }
-
-  actorSystem.scheduler.schedule(initialDelay = 0 seconds, interval = 1/emailsPerInstancePerSecond second, emailJobRunnable)
+  actorSystem.scheduler.schedule(initialDelay = 0 seconds, interval = 1/emailsPerInstancePerSecond second) {
+    emailJobHandler.processJob()
+  }
 }
