@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
-import java.time.{OffsetDateTime, ZoneOffset}
+import java.time.{Instant, OffsetDateTime, ZoneOffset}
 
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{spy, verify, when}
@@ -73,6 +73,14 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
         spyEmailQueue.enqueueJob(emailRequest)
 
         verify(spyEmailQueue).insert(ArgumentMatchers.any())(ArgumentMatchers.any())
+      }
+
+      "insert multiple email job with same time stamp into collection" in {
+        val timeStamp = OffsetDateTime.ofInstant( Instant.now() , ZoneOffset.UTC)
+        when(mockDateTimeService.getTimeStamp).thenReturn(timeStamp)
+        val emailRequest = EmailRequest(List.empty, "", Map.empty, force = false, None, None)
+        val eventualResults = (1 to 10).map(_ => emailQueue.enqueueJob(emailRequest))
+        await(Future.sequence(eventualResults))
       }
 
       "delete email job by id" in {

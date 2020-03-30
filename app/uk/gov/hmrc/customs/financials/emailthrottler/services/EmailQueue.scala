@@ -42,8 +42,21 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
     domainFormat = SendEmailJob.formatSendEmailJob,
     idFormat = ReactiveMongoFormats.objectIdFormats) {
 
-  collection.indexesManager.ensure(Index(Seq("timeStampAndCRL" -> IndexType.Ascending),
-    name = Some("timestampIndex"), unique = true, background = true, sparse = true))
+  private val timestampIndex = Index(
+    Seq("timeStampAndCRL" -> IndexType.Ascending),
+    name = Some("timestampIndex"),
+    unique = false,
+    background = true,
+    sparse = false)
+
+  // TODO: mongo does not recreate existing indexes, we have to drop it once, remove after deployed
+  //collection.indexesManager.ensure(timestampIndex)
+  collection.indexesManager.drop("timestampIndex").andThen { case dropResult =>
+    logger.info(s"drop timestampIndex result: $dropResult")
+    collection.indexesManager.ensure(timestampIndex).andThen { case createIndexResult =>
+      logger.info(s"create timestampIndex result: $createIndexResult")
+    }
+  }
 
   def enqueueJob(emailRequest: EmailRequest): Future[Unit] = {
     val timeStamp = dateTimeService.getTimeStamp
