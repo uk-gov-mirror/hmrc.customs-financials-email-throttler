@@ -17,12 +17,14 @@
 package uk.gov.hmrc.customs.financials.emailthrottler.config
 
 import javax.inject.{Inject, Singleton}
-import play.api.{Configuration, Environment, Mode}
+import play.api.{Configuration, Environment, Logger, LoggerLike, Mode}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 //noinspection TypeAnnotation
 @Singleton
 class AppConfig @Inject()(val config: Configuration, servicesConfig: ServicesConfig, environment: Environment) {
+
+  val log: LoggerLike = Logger(this.getClass)
 
   lazy val appName = servicesConfig.getString("appName")
 
@@ -35,4 +37,7 @@ class AppConfig @Inject()(val config: Configuration, servicesConfig: ServicesCon
 
   val defaultEmailsPerInstancePerSecond = 0.1
   val emailsPerInstancePerSecond = config.getOptional[Double]("emailsPerInstancePerSecond").getOrElse(defaultEmailsPerInstancePerSecond)
+
+  log.info(s"emails per instance per second: $emailsPerInstancePerSecond")
+
 }
