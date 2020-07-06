@@ -9,6 +9,7 @@ organization := "uk.gov.hmrc"
 
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
+  .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
   .settings(scoverageSettings: _*)
   .settings(
     majorVersion                     := 0,
