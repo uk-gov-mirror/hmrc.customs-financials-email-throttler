@@ -21,10 +21,10 @@ import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.scalatest.MustMatchers
 import play.api.http.Status
-import play.api.libs.json.{JsString, Json}
+import play.api.libs.json.JsString
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
-import uk.gov.hmrc.customs.financials.emailthrottler.domain.{AuditModel, EmailAddress, EmailRequest}
+import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailAddress, EmailRequest}
 import uk.gov.hmrc.http.{HeaderCarrier, HttpException, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
@@ -43,7 +43,7 @@ class EmailNotificationServiceSpec extends MockAuditingService with MockitoAnswe
     import scala.concurrent.ExecutionContext.Implicits.global
     implicit val hc: HeaderCarrier = HeaderCarrier()
 
-    val emailNotificationService = new EmailNotificationService(mockHttpClient, mockMetricsReporterService, mockAuditingService)
+    val emailNotificationService = new EmailNotificationService(mockHttpClient, mockMetricsReporterService)
 
     FeatureSwitch.EmailNotifications.enable()
   }
@@ -75,20 +75,6 @@ class EmailNotificationServiceSpec extends MockAuditingService with MockitoAnswe
         .thenReturn(Future.failed(new HttpException("Internal server error", Status.INTERNAL_SERVER_ERROR)))
 
       await(emailNotificationService.sendEmail(request)) mustBe false
-    }
-
-
-    "audit the request" in new EmailNotificationServiceScenario  {
-      val request = EmailRequest(List(EmailAddress("toAddress")), "templateId")
-      val expectedAuditRequest = Json.toJson(request)
-
-      when[Future[HttpResponse]](mockHttpClient.POST(any(), any(), any())(any(), any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(Status.ACCEPTED)))
-
-      await(emailNotificationService.sendEmail(request))
-
-      import emailNotificationService.{AUDIT_EMAIL_REQUEST, AUDIT_TYPE}
-      verifyAudit(AuditModel(AUDIT_EMAIL_REQUEST, expectedAuditRequest, AUDIT_TYPE))
     }
   }
 }
