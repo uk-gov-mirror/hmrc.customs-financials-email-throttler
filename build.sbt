@@ -10,6 +10,8 @@ organization := "uk.gov.hmrc"
 lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
   .disablePlugins(sbt.plugins.JUnitXmlReportPlugin)
+  .settings(publishingSettings: _*)
+  .settings(scalaSettings: _*)
   .settings(scoverageSettings: _*)
   .settings(
     majorVersion                     := 0,
@@ -20,10 +22,6 @@ lazy val microservice = Project(appName, file("."))
     parallelExecution in Test := false,
     fork in Test := false
   )
-  .settings(publishingSettings: _*)
-  .settings(scalaSettings: _*)
-  .configs(IntegrationTest)
-  .settings(integrationTestSettings(): _*)
   .settings(resolvers += Resolver.jcenterRepo)
 
 
