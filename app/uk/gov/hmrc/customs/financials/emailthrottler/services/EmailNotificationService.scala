@@ -18,21 +18,17 @@ package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import javax.inject.{Inject, Singleton}
 import play.api.http.Status
-import play.api.libs.json.Json
 import play.api.{Logger, LoggerLike}
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
-import uk.gov.hmrc.customs.financials.emailthrottler.domain.{AuditModel, EmailRequest}
+import uk.gov.hmrc.customs.financials.emailthrottler.domain.EmailRequest
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class EmailNotificationService @Inject()( http: HttpClient, metricsReporter: MetricsReporterService, auditService: AuditingService)
+class EmailNotificationService @Inject()( http: HttpClient, metricsReporter: MetricsReporterService)
                                         ( implicit appConfig: AppConfig, ec: ExecutionContext ) {
-
-  val AUDIT_EMAIL_REQUEST = "CUSTOMSFINANCIALSEMAIL"
-  val AUDIT_TYPE = "emailSent"
 
   val log: LoggerLike = Logger(this.getClass)
 
@@ -41,7 +37,6 @@ class EmailNotificationService @Inject()( http: HttpClient, metricsReporter: Met
     if (FeatureSwitch.EmailNotifications.isEnabled()) {
       implicit val hc = HeaderCarrier()
       metricsReporter.withResponseTimeLogging("email.post.send-email") {
-        auditService.audit(AuditModel(AUDIT_EMAIL_REQUEST, Json.toJson(request), AUDIT_TYPE))
 
         http.POST[EmailRequest, HttpResponse](appConfig.sendEmailUrl, request).collect {
           case response if (response.status == Status.ACCEPTED) =>

@@ -30,7 +30,6 @@ class AppConfig @Inject()(val config: Configuration, servicesConfig: ServicesCon
 
   protected def mode: Mode = environment.mode
 
-  val auditingEnabled: Boolean = servicesConfig.getBoolean("auditing.enabled")
   val graphiteHost: String = servicesConfig.getString("microservice.metrics.graphite.host")
 
   lazy val sendEmailUrl = servicesConfig.baseUrl("email") + "/hmrc/email"
