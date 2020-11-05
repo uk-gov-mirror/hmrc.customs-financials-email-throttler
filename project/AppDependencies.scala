@@ -12,9 +12,9 @@ object AppDependencies {
     "uk.gov.hmrc"             %% "bootstrap-play-26"        % "1.8.0" % Test classifier "tests",
     "org.scalatest"           %% "scalatest"                % "3.0.7"                 % "test",
     "com.typesafe.play"       %% "play-test"                % current                 % "test",
-    "org.pegdown"             %  "pegdown"                  % "1.6.0"                 % "test, it",
-    "org.scalatestplus.play"  %% "scalatestplus-play"       % "3.1.2"                 % "test, it",
-    "org.mockito"             %  "mockito-core"             % "3.1.0"                % "test,it"
+    "org.pegdown"             %  "pegdown"                  % "1.6.0"                 % "test",
+    "org.scalatestplus.play"  %% "scalatestplus-play"       % "3.1.2"                 % "test",
+    "org.mockito"             %  "mockito-core"             % "3.1.0"                % "test"
   )
 
   val akkaVersion = "2.5.23"
