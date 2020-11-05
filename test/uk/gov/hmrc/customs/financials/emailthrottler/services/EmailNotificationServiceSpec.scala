@@ -19,18 +19,19 @@ package uk.gov.hmrc.customs.financials.emailthrottler.services
 import org.mockito.ArgumentMatchers.{eq => is, _}
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
-import org.scalatest.MustMatchers
+import org.scalatest._
+import org.scalatest.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.libs.json.JsString
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+import play.api.test._
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
-import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailAddress, EmailRequest}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpException, HttpResponse}
+import uk.gov.hmrc.customs.financials.emailthrottler.domain._
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.Future
 
-class EmailNotificationServiceSpec extends MockAuditingService with MockitoAnswerSugar with MustMatchers with FutureAwaits with DefaultAwaitTimeout {
+class EmailNotificationServiceSpec extends WordSpec with MockitoAnswerSugar with MockitoSugar with MustMatchers with FutureAwaits with DefaultAwaitTimeout {
 
   trait EmailNotificationServiceScenario {
     implicit val mockAppConfig = mock[AppConfig]

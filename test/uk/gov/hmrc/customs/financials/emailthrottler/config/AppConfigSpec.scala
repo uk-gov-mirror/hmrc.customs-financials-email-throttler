@@ -30,10 +30,6 @@ class AppConfigSpec extends WordSpec with Matchers {
 
   "AppConfig" should {
 
-    "have settings for auditing" in {
-      appConfig.auditingEnabled shouldBe true
-    }
-
     "have settings for graphite" in {
       appConfig.graphiteHost shouldBe "graphite"
     }
