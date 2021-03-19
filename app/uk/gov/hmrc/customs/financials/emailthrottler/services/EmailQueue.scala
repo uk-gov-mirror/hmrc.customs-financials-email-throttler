@@ -110,4 +110,22 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
     result.map(_=>())
   }
 
+  def testEnqueueJob(emailRequest: EmailRequest): Future[Unit] = {
+    val timeStamp = dateTimeService.getTimeStamp
+
+    val result: Future[MultiBulkWriteResult] = bulkInsert(
+      (1 to 1000).map(
+        i =>
+          SendEmailJob(BSONObjectID.generate, emailRequest, timeStamp, processing = false)))
+    result.onComplete {
+      case Failure(error) =>
+        metricsReporter.reportFailedEnqueueJob()
+        logger.error(s"Could not enqueue send email job: ${error.getMessage}")
+      case Success(_) =>
+        metricsReporter.reportSuccessfulEnqueueJob()
+        logger.info(s"Successfully enqueued send email job:  $timeStamp : $emailRequest")
+    }
+
+    result.map(_=>())
+  }
 }

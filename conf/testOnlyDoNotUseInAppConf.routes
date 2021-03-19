@@ -11,3 +11,4 @@
 
 # Add all the application routes to the prod.routes file
 ->         /                          prod.Routes
+POST    /customs-financials-email-throttler/test-enqueue-email         uk.gov.hmrc.customs.financials.emailthrottler.testOnly.EmailThrottlerTestController.testEnqueueEmail
