@@ -34,4 +34,6 @@ class EmailJobHandler @Inject()(emailQueue: EmailQueue, emailNotificationService
     } yield ()
   }
 
+  def houseKeeping(): Unit = emailQueue.resetProcessing
+
 }

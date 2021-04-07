@@ -32,4 +32,8 @@ class Scheduler @Inject()(appConfig: AppConfig, emailJobHandler: EmailJobHandler
   actorSystem.scheduler.schedule(initialDelay = 0 seconds, interval = 1/emailsPerInstancePerSecond second) {
     emailJobHandler.processJob()
   }
+
+  actorSystem.scheduler.schedule(initialDelay =  10 minutes, interval = appConfig.housekeepingHours hours) {
+    emailJobHandler.houseKeeping()
+  }
 }

@@ -21,7 +21,8 @@ import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.BSONObjectID
+import reactivemongo.bson.{BSONObjectID, document}
+import reactivemongo.play.json.collection.Helpers.idWrites
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
 import uk.gov.hmrc.mongo.ReactiveRepository
@@ -110,4 +111,17 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
     result.map(_=>())
   }
 
+  def resetProcessing = {
+    val maxAge = dateTimeService.getTimeStamp.minusMinutes(appConfig.emailMaxAgeMins)
+
+    collection.update(ordered = false).one(
+      Json.obj("$and" -> Json.arr(
+        Json.obj("processing" -> Json.toJsFieldJsValueWrapper(true)),
+        Json.obj("timeStampAndCRL" -> Json.obj("$lt" -> maxAge)))
+      ),
+      Json.obj("$set" -> Json.obj("processing" -> Json.toJsFieldJsValueWrapper(false))),
+      upsert = true,
+      multi = true
+    ).map(_ => ())
+  }
 }

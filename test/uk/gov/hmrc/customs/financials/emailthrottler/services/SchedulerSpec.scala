@@ -17,7 +17,7 @@
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import akka.actor.ActorSystem
-import org.mockito.Mockito.{verify, when}
+import org.mockito.Mockito.{times, verify, when}
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
@@ -49,7 +49,7 @@ class SchedulerSpec extends WordSpec with MockitoSugar with Matchers {
       //      (ArgumentMatchers.any())
       //      )
 
-      verify(mockActorSystem).scheduler
+      verify(mockActorSystem, times(2)).scheduler
     }
   }
 }
