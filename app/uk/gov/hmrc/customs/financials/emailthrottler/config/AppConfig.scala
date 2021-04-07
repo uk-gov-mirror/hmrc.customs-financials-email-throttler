@@ -37,6 +37,12 @@ class AppConfig @Inject()(val config: Configuration, servicesConfig: ServicesCon
   val defaultEmailsPerInstancePerSecond = 0.1
   val emailsPerInstancePerSecond = config.getOptional[Double]("emailsPerInstancePerSecond").getOrElse(defaultEmailsPerInstancePerSecond)
 
+  lazy val defaultEmailMaxAgeMins = 30
+  lazy val emailMaxAgeMins = config.getOptional[Int]("emailMaxAgeMins").getOrElse(defaultEmailMaxAgeMins)
+
+  lazy val defaultHouseKeepingHours = 12
+  lazy val housekeepingHours = config.getOptional[Int]("housekeepingHours").getOrElse(defaultHouseKeepingHours)
+
   log.info(s"emails per instance per second: $emailsPerInstancePerSecond")
 
 }

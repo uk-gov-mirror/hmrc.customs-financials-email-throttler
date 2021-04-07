@@ -110,4 +110,23 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
     result.map(_=>())
   }
 
+  def resetProcessing = {
+
+    val maxAge = dateTimeService.getTimeStamp.minusMinutes(appConfig.emailMaxAgeMins)
+
+    findAndUpdate(
+      query = Json.obj("$and" -> Json.arr(
+        Json.obj("processing" -> Json.toJsFieldJsValueWrapper(true)),
+        Json.obj("timeStampAndCRL" -> Json.obj("$lt" -> maxAge)))),
+      update = Json.obj("$set" -> Json.obj("processing" -> Json.toJsFieldJsValueWrapper(false))),
+      sort = Some(Json.obj("timeStampAndCRL" -> Json.toJsFieldJsValueWrapper(1))),
+      fetchNewObject = true
+    ).onComplete {
+      case Success(_) =>
+        logger.info(s"Successfully reset processing")
+      case Failure(error) =>
+        logger.error(s"Could not reset processing: $error")
+    }
+  }
+
 }

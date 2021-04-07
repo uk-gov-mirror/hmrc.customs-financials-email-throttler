@@ -17,11 +17,11 @@
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import java.time.{Instant, OffsetDateTime, ZoneOffset}
-
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{spy, verify, when}
 import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpec}
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.libs.json.Json
 import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.BSONObjectID
@@ -119,6 +119,38 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
         val expectedEmailRequest2 = EmailRequest(List.empty, "id_2", Map.empty, force = false, None, None)
         val job2 = await(emailQueue.nextJob)
         job2.map(_.emailRequest) mustBe Some(expectedEmailRequest2)
+      }
+
+      "reset the processing flag for emails which are older than maximum age" in {
+        when(mockAppConfig.emailMaxAgeMins).thenReturn(30)
+
+        when(mockDateTimeService.getTimeStamp)
+          .thenReturn(OffsetDateTime.of(2021,4,7,15,0,0,0,ZoneOffset.UTC))
+          .thenReturn(OffsetDateTime.of(2021,4,7,15,1,0,0,ZoneOffset.UTC))
+          .thenReturn(OffsetDateTime.of(2021,4,7,15,28,0,0,ZoneOffset.UTC))
+          .thenReturn(OffsetDateTime.of(2021,4,7,15,30,0,0,ZoneOffset.UTC))
+          .thenReturn(OffsetDateTime.of(2021,4,7,15,31,0,0,ZoneOffset.UTC))
+          .thenReturn(OffsetDateTime.of(2021,4,7,15,59,0,0,ZoneOffset.UTC))  // Maximum age
+
+        val emailRequests = Seq(
+          EmailRequest(List.empty, "id_1", Map.empty, force = false, None, None),
+          EmailRequest(List.empty, "id_2", Map.empty, force = false, None, None),
+          EmailRequest(List.empty, "id_3", Map.empty, force = false, None, None),
+          EmailRequest(List.empty, "id_4", Map.empty, force = false, None, None),
+          EmailRequest(List.empty, "id_5", Map.empty, force = false, None, None)
+        )
+        await(Future.sequence(emailRequests.map(emailQueue.enqueueJob)))
+        emailRequests.map(_ => await(emailQueue.nextJob))
+
+        val countAllTrue = await(emailQueue.count(query = Json.obj("processing" -> Json.toJsFieldJsValueWrapper(true))))
+        countAllTrue must be(emailRequests.size)
+
+        emailQueue.resetProcessing
+//        emailQueue.resetProcessing
+//        emailQueue.resetProcessing
+
+        val resetCount = await(emailQueue.count(query = Json.obj("processing" -> Json.toJsFieldJsValueWrapper(false))))
+        resetCount must be(3)
       }
 
     }
