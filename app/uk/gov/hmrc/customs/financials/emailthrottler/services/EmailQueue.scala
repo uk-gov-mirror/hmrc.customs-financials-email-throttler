@@ -21,7 +21,8 @@ import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.BSONObjectID
+import reactivemongo.bson.{BSONObjectID, document}
+import reactivemongo.play.json.collection.Helpers.idWrites
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
 import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
 import uk.gov.hmrc.mongo.ReactiveRepository
@@ -111,22 +112,16 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
   }
 
   def resetProcessing = {
-
     val maxAge = dateTimeService.getTimeStamp.minusMinutes(appConfig.emailMaxAgeMins)
 
-    findAndUpdate(
-      query = Json.obj("$and" -> Json.arr(
+    collection.update(ordered = false).one(
+      Json.obj("$and" -> Json.arr(
         Json.obj("processing" -> Json.toJsFieldJsValueWrapper(true)),
-        Json.obj("timeStampAndCRL" -> Json.obj("$lt" -> maxAge)))),
-      update = Json.obj("$set" -> Json.obj("processing" -> Json.toJsFieldJsValueWrapper(false))),
-      sort = Some(Json.obj("timeStampAndCRL" -> Json.toJsFieldJsValueWrapper(1))),
-      fetchNewObject = true
-    ).onComplete {
-      case Success(_) =>
-        logger.info(s"Successfully reset processing")
-      case Failure(error) =>
-        logger.error(s"Could not reset processing: $error")
-    }
+        Json.obj("timeStampAndCRL" -> Json.obj("$lt" -> maxAge)))
+      ),
+      Json.obj("$set" -> Json.obj("processing" -> Json.toJsFieldJsValueWrapper(false))),
+      upsert = true,
+      multi = true
+    ).map(_ => ())
   }
-
 }

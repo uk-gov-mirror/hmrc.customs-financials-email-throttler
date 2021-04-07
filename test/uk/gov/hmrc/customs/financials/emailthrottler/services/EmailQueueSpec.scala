@@ -145,9 +145,7 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
         val countAllTrue = await(emailQueue.count(query = Json.obj("processing" -> Json.toJsFieldJsValueWrapper(true))))
         countAllTrue must be(emailRequests.size)
 
-        emailQueue.resetProcessing
-//        emailQueue.resetProcessing
-//        emailQueue.resetProcessing
+        await(emailQueue.resetProcessing)
 
         val resetCount = await(emailQueue.count(query = Json.obj("processing" -> Json.toJsFieldJsValueWrapper(false))))
         resetCount must be(3)
