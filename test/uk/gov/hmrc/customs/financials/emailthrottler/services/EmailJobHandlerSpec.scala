@@ -16,41 +16,36 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
-import java.time.{OffsetDateTime, ZoneOffset}
-
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{verify, when}
-import org.scalatest.WordSpec
-import org.scalatestplus.mockito.MockitoSugar
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
-import play.api.{Configuration, Environment, Mode}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
-import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
+import uk.gov.hmrc.customs.financials.emailthrottler.models.{EmailRequest, SendEmailJob}
+import uk.gov.hmrc.customs.financials.emailthrottler.utils.SpecBase
 import uk.gov.hmrc.mongo.MongoConnector
 
+import java.time.{OffsetDateTime, ZoneOffset}
 import scala.concurrent.Future
 
-//noinspection TypeAnnotation
-class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits with DefaultAwaitTimeout {
+class EmailJobHandlerSpec extends SpecBase {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
   class MockedEmailJobHandlerScenario() {
 
-    val sendEmailJob = SendEmailJob(
+    val sendEmailJob: SendEmailJob = SendEmailJob(
       BSONObjectID.generate,
       EmailRequest(List.empty, "id_1", Map.empty, force = false, None, None),
       OffsetDateTime.of(2019,10,8,15,1,0,0,ZoneOffset.UTC),
       processing = true
     )
 
-    val mockEmailQueue = mock[EmailQueue]
+    val mockEmailQueue: EmailQueue = mock[EmailQueue]
     when(mockEmailQueue.nextJob).thenReturn(Future.successful(Some(sendEmailJob)))
     when(mockEmailQueue.deleteJob(ArgumentMatchers.any())).thenReturn(Future.successful(()))
 
-    val mockEmailNotificationService = mock[EmailNotificationService]
+    val mockEmailNotificationService: EmailNotificationService = mock[EmailNotificationService]
     when(mockEmailNotificationService.sendEmail(ArgumentMatchers.any())).thenReturn(Future.successful(true))
 
     val service = new EmailJobHandler(mockEmailQueue, mockEmailNotificationService)
@@ -83,11 +78,9 @@ class EmailJobHandlerSpec extends WordSpec with MockitoSugar with FutureAwaits w
       }
 
       "integration" in {
-        val env           = Environment.simple()
-        val configuration = Configuration.load(env)
         val appConfig = mock[AppConfig]
         val dateTimeService = new DateTimeService
-        val reactiveMongoComponent = new ReactiveMongoComponent {
+        val reactiveMongoComponent: ReactiveMongoComponent = new ReactiveMongoComponent {
           val mongoUri = "mongodb://127.0.0.1:27017/test-customs-email-throttler"
           override def mongoConnector: MongoConnector = MongoConnector(mongoUri)
         }

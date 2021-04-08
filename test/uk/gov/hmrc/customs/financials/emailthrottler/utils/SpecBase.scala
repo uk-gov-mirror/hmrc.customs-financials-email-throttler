@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.financials.emailthrottler.services
+package uk.gov.hmrc.customs.financials.emailthrottler.utils
 
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
+import org.scalatest.{MustMatchers, WordSpec}
+import org.scalatestplus.mockito.MockitoSugar
+import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 
-trait MockitoAnswerSugar {
-
-  implicit def toAnswer[T](f: () => T): Answer[T] = new Answer[T] {
-    override def answer(invocation: InvocationOnMock): T = f()
-  }
-
-  implicit def toAnswerWithArguments[T](f: InvocationOnMock => T): Answer[T] = new Answer[T] {
-    override def answer(invocation: InvocationOnMock): T = f(invocation)
-  }
-
-}
+trait SpecBase extends WordSpec with MockitoSugar with MustMatchers with FutureAwaits with DefaultAwaitTimeout

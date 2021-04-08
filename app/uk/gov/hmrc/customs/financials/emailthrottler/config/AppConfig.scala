@@ -16,33 +16,17 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.config
 
-import javax.inject.{Inject, Singleton}
-import play.api.{Configuration, Environment, Logger, LoggerLike, Mode}
+import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-//noinspection TypeAnnotation
+import javax.inject.{Inject, Singleton}
+
 @Singleton
-class AppConfig @Inject()(val config: Configuration, servicesConfig: ServicesConfig, environment: Environment) {
-
-  val log: LoggerLike = Logger(this.getClass)
-
-  lazy val appName = servicesConfig.getString("appName")
-
-  protected def mode: Mode = environment.mode
-
-  val graphiteHost: String = servicesConfig.getString("microservice.metrics.graphite.host")
-
-  lazy val sendEmailUrl = servicesConfig.baseUrl("email") + "/hmrc/email"
-
-  val defaultEmailsPerInstancePerSecond = 0.1
-  val emailsPerInstancePerSecond = config.getOptional[Double]("emailsPerInstancePerSecond").getOrElse(defaultEmailsPerInstancePerSecond)
-
-  lazy val defaultEmailMaxAgeMins = 30
-  lazy val emailMaxAgeMins = config.getOptional[Int]("emailMaxAgeMins").getOrElse(defaultEmailMaxAgeMins)
-
-  lazy val defaultHouseKeepingHours = 12
-  lazy val housekeepingHours = config.getOptional[Int]("housekeepingHours").getOrElse(defaultHouseKeepingHours)
-
-  log.info(s"emails per instance per second: $emailsPerInstancePerSecond")
-
+class AppConfig @Inject()(val config: Configuration, servicesConfig: ServicesConfig) {
+  lazy val appName: String = servicesConfig.getString("appName")
+  lazy val graphiteHost: String = servicesConfig.getString("microservice.metrics.graphite.host")
+  lazy val sendEmailUrl: String = servicesConfig.baseUrl("email") + "/hmrc/email"
+  lazy val emailsPerInstancePerSecond: Double = config.get[Double]("emailsPerInstancePerSecond")
+  lazy val emailMaxAgeMins: Int = config.get[Int]("emailMaxAgeMins")
+  lazy val housekeepingHours: Int = config.get[Int]("housekeepingHours")
 }

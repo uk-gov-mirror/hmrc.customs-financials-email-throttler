@@ -16,14 +16,13 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
-import java.time.OffsetDateTime
-
 import com.google.inject.Inject
 import com.kenshoo.play.metrics.Metrics
-import javax.inject.Singleton
 import play.api.http.Status
-import uk.gov.hmrc.http.{BadRequestException, NotFoundException, Upstream4xxResponse, Upstream5xxResponse}
+import uk.gov.hmrc.http.{BadRequestException, NotFoundException, Upstream4xxResponse, Upstream5xxResponse, UpstreamErrorResponse}
 
+import java.time.OffsetDateTime
+import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -32,22 +31,20 @@ class MetricsReporterService @Inject()(val metrics: Metrics, dateTimeService: Da
 
   def withResponseTimeLogging[T](resourceName: String)(future: Future[T])
                                 (implicit ec: ExecutionContext): Future[T] = {
-    val startTime = dateTimeService.getTimeStamp
     future.andThen { case response =>
       val httpResponseCode = response match {
         case Success(_) => Status.OK
         case Failure(exception: NotFoundException) => exception.responseCode
         case Failure(exception: BadRequestException) => exception.responseCode
-        case Failure(exception: Upstream4xxResponse) => exception.upstreamResponseCode
-        case Failure(exception: Upstream5xxResponse) => exception.upstreamResponseCode
+        case Failure(exception: UpstreamErrorResponse) => exception.statusCode
         case Failure(_) => Status.INTERNAL_SERVER_ERROR
       }
-      updateResponseTimeHistogram(resourceName, httpResponseCode, startTime, dateTimeService.getTimeStamp)
+      updateResponseTimeHistogram(resourceName, httpResponseCode, dateTimeService.getTimeStamp, dateTimeService.getTimeStamp)
     }
   }
 
   private def updateResponseTimeHistogram(resourceName: String, httpResponseCode: Int,
-                                  startTimestamp: OffsetDateTime, endTimestamp: OffsetDateTime): Unit = {
+                                          startTimestamp: OffsetDateTime, endTimestamp: OffsetDateTime): Unit = {
     val RESPONSE_TIMES_METRIC = "responseTimes"
     val histogramName = s"$RESPONSE_TIMES_METRIC.$resourceName.$httpResponseCode"
     val elapsedTimeInMillis = endTimestamp.toInstant.toEpochMilli - startTimestamp.toInstant.toEpochMilli
@@ -56,29 +53,32 @@ class MetricsReporterService @Inject()(val metrics: Metrics, dateTimeService: Da
 
   val EMAIL_QUEUE_METRIC = "email-queue"
 
-  def reportSuccessfulEnqueueJob(): Unit =  {
+  def reportSuccessfulEnqueueJob(): Unit = {
     val counterName = s"$EMAIL_QUEUE_METRIC.enqueue-send-email-job-in-mongo-successful"
     metrics.defaultRegistry.counter(counterName).inc()
   }
-  def reportFailedEnqueueJob(): Unit =  {
+
+  def reportFailedEnqueueJob(): Unit = {
     val counterName = s"$EMAIL_QUEUE_METRIC.enqueue-send-email-job-in-mongo-failed"
     metrics.defaultRegistry.counter(counterName).inc()
   }
 
-  def reportSuccessfulMarkJobForProcessing(): Unit =  {
+  def reportSuccessfulMarkJobForProcessing(): Unit = {
     val counterName = s"$EMAIL_QUEUE_METRIC.mark-oldest-send-email-job-for-processing-in-mongo-successful"
     metrics.defaultRegistry.counter(counterName).inc()
   }
-  def reportFailedMarkJobForProcessing(): Unit =  {
+
+  def reportFailedMarkJobForProcessing(): Unit = {
     val counterName = s"$EMAIL_QUEUE_METRIC.mark-oldest-send-email-job-for-processing-in-mongo-failed"
     metrics.defaultRegistry.counter(counterName).inc()
   }
 
-  def reportSuccessfullyRemoveCompletedJob(): Unit =  {
+  def reportSuccessfullyRemoveCompletedJob(): Unit = {
     val counterName = s"$EMAIL_QUEUE_METRIC.delete-completed-send-email-job-from-mongo-successful"
     metrics.defaultRegistry.counter(counterName).inc()
   }
-  def reportFailedToRemoveCompletedJob(): Unit =  {
+
+  def reportFailedToRemoveCompletedJob(): Unit = {
     val counterName = s"$EMAIL_QUEUE_METRIC.delete-completed-send-email-job-from-mongo-failed"
     metrics.defaultRegistry.counter(counterName).inc()
   }
