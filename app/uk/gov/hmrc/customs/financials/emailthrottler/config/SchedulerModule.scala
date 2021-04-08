@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.config
 
-import play.api.inject.{SimpleModule, _}
+import play.api.inject._
 import uk.gov.hmrc.customs.financials.emailthrottler.services.Scheduler
 
 class SchedulerModule extends SimpleModule(bind[Scheduler].toSelf.eagerly())

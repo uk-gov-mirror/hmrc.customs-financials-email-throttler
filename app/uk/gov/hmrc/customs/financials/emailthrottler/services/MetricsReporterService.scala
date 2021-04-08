@@ -31,6 +31,7 @@ class MetricsReporterService @Inject()(val metrics: Metrics, dateTimeService: Da
 
   def withResponseTimeLogging[T](resourceName: String)(future: Future[T])
                                 (implicit ec: ExecutionContext): Future[T] = {
+    val startTime = dateTimeService.getTimeStamp
     future.andThen { case response =>
       val httpResponseCode = response match {
         case Success(_) => Status.OK
@@ -39,7 +40,7 @@ class MetricsReporterService @Inject()(val metrics: Metrics, dateTimeService: Da
         case Failure(exception: UpstreamErrorResponse) => exception.statusCode
         case Failure(_) => Status.INTERNAL_SERVER_ERROR
       }
-      updateResponseTimeHistogram(resourceName, httpResponseCode, dateTimeService.getTimeStamp, dateTimeService.getTimeStamp)
+      updateResponseTimeHistogram(resourceName, httpResponseCode, startTime, dateTimeService.getTimeStamp)
     }
   }
 
