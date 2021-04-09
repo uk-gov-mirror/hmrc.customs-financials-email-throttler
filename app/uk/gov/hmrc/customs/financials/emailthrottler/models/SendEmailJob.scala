@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.financials.emailthrottler.module
+package uk.gov.hmrc.customs.financials.emailthrottler.models
 
-import play.api.inject.SimpleModule
-import play.api.inject._
-import uk.gov.hmrc.customs.financials.emailthrottler.services.Scheduler
+import play.api.libs.json.{Json, OFormat}
+import reactivemongo.bson.BSONObjectID
+import java.time.OffsetDateTime
+import uk.gov.hmrc.mongo.json.ReactiveMongoFormats.objectIdFormats
 
-class SchedulerModule extends SimpleModule(bind[Scheduler].toSelf.eagerly())
+case class SendEmailJob(_id: BSONObjectID, emailRequest: EmailRequest, timeStampAndCRL: OffsetDateTime, processing: Boolean)
+
+object SendEmailJob {
+  implicit val formatSendEmailJob: OFormat[SendEmailJob] = Json.format[SendEmailJob]
+}

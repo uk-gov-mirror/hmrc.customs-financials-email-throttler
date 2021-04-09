@@ -16,18 +16,18 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
-import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONObjectID, document}
+import reactivemongo.bson.BSONObjectID
 import reactivemongo.play.json.collection.Helpers.idWrites
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
-import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailRequest, SendEmailJob}
+import uk.gov.hmrc.customs.financials.emailthrottler.models.{EmailRequest, SendEmailJob}
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -50,14 +50,8 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
     background = true,
     sparse = false)
 
-  // TODO: mongo does not recreate existing indexes, we have to drop it once, remove after deployed
-  //collection.indexesManager.ensure(timestampIndex)
-  collection.indexesManager.drop("timestampIndex").andThen { case dropResult =>
-    logger.info(s"drop timestampIndex result: $dropResult")
-    collection.indexesManager.ensure(timestampIndex).andThen { case createIndexResult =>
-      logger.info(s"create timestampIndex result: $createIndexResult")
-    }
-  }
+  private val _ = collection.indexesManager.ensure(timestampIndex)
+
 
   def enqueueJob(emailRequest: EmailRequest): Future[Unit] = {
     val timeStamp = dateTimeService.getTimeStamp
@@ -72,23 +66,23 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
         logger.info(s"Successfully enqueued send email job:  $timeStamp : $emailRequest")
     }
 
-    result.map(_=>())
+    result.map(_ => ())
   }
 
   def nextJob: Future[Option[SendEmailJob]] = {
     val eventualResult = findAndUpdate(
-        query = Json.obj("processing" -> Json.toJsFieldJsValueWrapper(false)),
-        update = Json.obj("$set" -> Json.obj("processing" -> Json.toJsFieldJsValueWrapper(true))),
-        sort = Some(Json.obj("timeStampAndCRL" -> Json.toJsFieldJsValueWrapper(1))),
-        fetchNewObject = true
+      query = Json.obj("processing" -> Json.toJsFieldJsValueWrapper(false)),
+      update = Json.obj("$set" -> Json.obj("processing" -> Json.toJsFieldJsValueWrapper(true))),
+      sort = Some(Json.obj("timeStampAndCRL" -> Json.toJsFieldJsValueWrapper(1))),
+      fetchNewObject = true
     )
 
     eventualResult.onComplete {
-      case Success(result) if(result.value.isDefined) =>
-          metricsReporter.reportSuccessfulMarkJobForProcessing()
-          logger.info(s"Successfully marked latest send email job for processing: ${result.result[SendEmailJob]}")
-      case Success(result) if(result.lastError.isDefined && result.lastError.get.err.isEmpty) =>
-          logger.debug(s"email queue is empty")
+      case Success(result) if (result.value.isDefined) =>
+        metricsReporter.reportSuccessfulMarkJobForProcessing()
+        logger.info(s"Successfully marked latest send email job for processing: ${result.result[SendEmailJob]}")
+      case Success(result) if (result.lastError.isDefined && result.lastError.get.err.isEmpty) =>
+        logger.debug(s"email queue is empty")
       case m =>
         metricsReporter.reportFailedMarkJobForProcessing()
         logger.error(s"Marking send email job for processing failed. Unexpected MongoDB error: $m")
@@ -107,11 +101,10 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
         metricsReporter.reportFailedToRemoveCompletedJob()
         logger.error(s"Could not delete completed send email job: $error")
     }
-
     result.map(_=>())
   }
 
-  def resetProcessing = {
+  def resetProcessing: Future[Unit] = {
     val maxAge = dateTimeService.getTimeStamp.minusMinutes(appConfig.emailMaxAgeMins)
 
     collection.update(ordered = false).one(

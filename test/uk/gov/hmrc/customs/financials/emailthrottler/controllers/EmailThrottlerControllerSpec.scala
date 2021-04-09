@@ -18,20 +18,34 @@ package uk.gov.hmrc.customs.financials.emailthrottler.controllers
 
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.verify
-import org.scalatestplus.mockito.MockitoSugar
-import org.scalatestplus.play.PlaySpec
 import play.api.http.Status
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
+import play.api.mvc.Result
 import play.api.test.Helpers._
 import play.api.test.{FakeHeaders, FakeRequest, Helpers}
+import uk.gov.hmrc.customs.financials.emailthrottler.models.EmailRequest
 import uk.gov.hmrc.customs.financials.emailthrottler.services.EmailQueue
+import uk.gov.hmrc.customs.financials.emailthrottler.utils.SpecBase
 
 import scala.concurrent.ExecutionContext.Implicits.global
-//noinspection TypeAnnotation
-class EmailThrottlerControllerSpec extends PlaySpec with MockitoSugar {
+import scala.concurrent.Future
 
-  class EmailThrottlerScenario() {
-    val requestBody = Json.parse(
+class EmailThrottlerControllerSpec extends SpecBase {
+
+  "the controller" should {
+    "handle enqueue request" in new Setup {
+      val result: Future[Result] = controller.enqueueEmail()(fakeRequest)
+      status(result) mustBe Status.ACCEPTED
+    }
+
+    "ask EmailQueue service to store emails" in new Setup {
+      await(controller.enqueueEmail()(fakeRequest))
+      verify(mockEmailQueue).enqueueJob(ArgumentMatchers.any())
+    }
+  }
+
+  trait Setup {
+    val requestBody: JsValue = Json.parse(
       """{
         | "to": ["email1@example.co.uk", "email1@example.co.uk"],
         | "templateId": "template_for_duty_deferment_email",
@@ -43,31 +57,9 @@ class EmailThrottlerControllerSpec extends PlaySpec with MockitoSugar {
         | "eventUrl": "event.url.co.uk",
         | "onSendUrl": "on.send.url.co.uk"
         |}""".stripMargin)
-    val fakeRequest = FakeRequest("POST", "/", FakeHeaders(), requestBody)
-    val mockEmailQueue = mock[EmailQueue]
 
-    val controller = new EmailThrottlerController(mockEmailQueue, Helpers.stubControllerComponents())
+    val fakeRequest: FakeRequest[EmailRequest] = FakeRequest("POST", "/", FakeHeaders(), requestBody.as[EmailRequest])
+    val mockEmailQueue: EmailQueue = mock[EmailQueue]
+    val controller: EmailThrottlerController = new EmailThrottlerController(mockEmailQueue, Helpers.stubControllerComponents())
   }
-
-  "the controller" should {
-
-    "handle enqueue request" in new EmailThrottlerScenario {
-      val result = controller.enqueueEmail()(fakeRequest)
-      status(result) mustBe Status.ACCEPTED
-    }
-
-    "ask EmailQueue service to store emails" in new EmailThrottlerScenario {
-      await(controller.enqueueEmail()(fakeRequest))
-      verify(mockEmailQueue).enqueueJob(ArgumentMatchers.any())
-    }
-
-    "respond Bad Request to invalid request" in new EmailThrottlerScenario {
-      val invalidRequestBody= Json.parse("{}")
-      val invalidRequest = FakeRequest("POST", "/", FakeHeaders(), invalidRequestBody)
-      val result = controller.enqueueEmail()(invalidRequest)
-      status(result) mustBe Status.BAD_REQUEST
-    }
-
-  }
-
 }

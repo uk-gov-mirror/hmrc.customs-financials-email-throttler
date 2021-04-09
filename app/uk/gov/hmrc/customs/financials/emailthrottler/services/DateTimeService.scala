@@ -18,9 +18,6 @@ package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import java.time.{Instant, OffsetDateTime, ZoneOffset}
 
-import javax.inject.Singleton
-
-@Singleton
-case class DateTimeService() {
-  def getTimeStamp: OffsetDateTime = OffsetDateTime.ofInstant( Instant.now() , ZoneOffset.UTC)
+class DateTimeService {
+  def getTimeStamp: OffsetDateTime = OffsetDateTime.ofInstant(Instant.now(), ZoneOffset.UTC)
 }

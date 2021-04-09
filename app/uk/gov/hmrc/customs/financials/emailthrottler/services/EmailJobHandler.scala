@@ -17,7 +17,6 @@
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import javax.inject.{Inject, Singleton}
-
 import scala.concurrent.{ExecutionContext, Future}
 
 
@@ -35,5 +34,4 @@ class EmailJobHandler @Inject()(emailQueue: EmailQueue, emailNotificationService
   }
 
   def houseKeeping(): Unit = emailQueue.resetProcessing
-
 }

@@ -16,7 +16,7 @@ lazy val microservice = Project(appName, file("."))
     majorVersion                     := 0,
     libraryDependencies              ++= AppDependencies.compile ++ AppDependencies.test,
     scalaVersion                     := "2.12.11",
-    scalacOptions                    := Seq("-target:jvm-1.8"),
+    scalacOptions                    := Seq("-feature", "-deprecation"),
     parallelExecution in Test := false,
     fork in Test := false
   )

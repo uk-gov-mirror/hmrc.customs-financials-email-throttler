@@ -14,18 +14,9 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.customs.financials.emailthrottler.services
+package uk.gov.hmrc.customs.financials.emailthrottler.config
 
-import org.scalatest.{MustMatchers, WordSpec}
+import play.api.inject._
+import uk.gov.hmrc.customs.financials.emailthrottler.services.Scheduler
 
-class DateTimeServiceSpec extends WordSpec with MustMatchers {
-
-  "DateTimeService" should {
-
-    "provide timestamp" in {
-      val service = DateTimeService()
-      val timeStamp = service.getTimeStamp
-    }
-  }
-
-}
+class SchedulerModule extends SimpleModule(bind[Scheduler].toSelf.eagerly())

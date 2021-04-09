@@ -16,37 +16,25 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.controllers
 
-import javax.inject.{Inject, Singleton}
-import play.api.libs.json.{JsError, JsValue, Json}
+import play.api.libs.json.Json
 import play.api.mvc.{Action, ControllerComponents}
 import play.api.{Logger, LoggerLike}
-import uk.gov.hmrc.customs.financials.emailthrottler.domain.EmailRequest
+import uk.gov.hmrc.customs.financials.emailthrottler.models.EmailRequest
 import uk.gov.hmrc.customs.financials.emailthrottler.services.EmailQueue
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton()
-class EmailThrottlerController @Inject()(emailQueue: EmailQueue, cc: ControllerComponents)(implicit ec: ExecutionContext)
-    extends BackendController(cc) {
+class EmailThrottlerController @Inject()(emailQueue: EmailQueue, cc: ControllerComponents)
+                                        (implicit ec: ExecutionContext) extends BackendController(cc) {
 
   val log: LoggerLike = Logger(this.getClass)
 
-  log.info("Service started")
-
-  def enqueueEmail(): Action[JsValue] = Action.async(parse.json) { implicit request =>
-
-    request.body.validate[EmailRequest].fold(
-      errors => {
-        log.error(s"enqueueEmail: Bad Request, error: $errors")
-        Future.successful(BadRequest(Json.obj("Status" -> "Bad Request", "message" -> JsError.toJson(errors))))
-      },
-      emailRequest => {
-        log.info(s"enqueueEmail: send email request enqueued")
-        emailQueue.enqueueJob(emailRequest)
-        Future.successful(Accepted(Json.obj("Status" -> "Ok", "message" -> "Email successfully queued")))
-      }
-    )
-
+  def enqueueEmail(): Action[EmailRequest] = Action.async(parse.json[EmailRequest]) { implicit request =>
+    log.info(s"enqueueEmail: send email request enqueued")
+    emailQueue.enqueueJob(request.body)
+    Future.successful(Accepted(Json.obj("Status" -> "Ok", "message" -> "Email successfully queued")))
   }
 }

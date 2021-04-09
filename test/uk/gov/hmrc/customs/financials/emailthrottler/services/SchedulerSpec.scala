@@ -18,37 +18,21 @@ package uk.gov.hmrc.customs.financials.emailthrottler.services
 
 import akka.actor.ActorSystem
 import org.mockito.Mockito.{times, verify, when}
-import org.scalatest.{Matchers, WordSpec}
-import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
+import uk.gov.hmrc.customs.financials.emailthrottler.utils.SpecBase
+import scala.concurrent.ExecutionContext.Implicits.global
 
-import scala.language.postfixOps
-
-class SchedulerSpec extends WordSpec with MockitoSugar with Matchers {
+class SchedulerSpec extends SpecBase {
 
   "Scheduler" should {
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-
     "schedule email sending" in {
-
       val mockAppConfig = mock[AppConfig]
       when(mockAppConfig.emailsPerInstancePerSecond).thenReturn(0.2)
       val mockEmailJobHandler = mock[EmailJobHandler]
       val mockActorSystem = mock[ActorSystem]
       val mockScheduler = mock[akka.actor.Scheduler]
       when(mockActorSystem.scheduler).thenReturn(mockScheduler)
-
       new Scheduler(mockAppConfig, mockEmailJobHandler, mockActorSystem)
-
-      // TODO: fix test, mockito fail to match call by name arguments :(
-      //      verify(mockScheduler.schedule(
-      //        ArgumentMatchers.eq(0 seconds),
-      //        ArgumentMatchers.eq(5 second))
-      //      (ArgumentMatchers.anyObject())
-      //      (ArgumentMatchers.any())
-      //      )
-
       verify(mockActorSystem, times(2)).scheduler
     }
   }

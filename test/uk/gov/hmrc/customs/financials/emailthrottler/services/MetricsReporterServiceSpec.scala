@@ -16,76 +16,48 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
-import java.time.OffsetDateTime
-
 import com.codahale.metrics.{Counter, Histogram, MetricRegistry}
 import com.kenshoo.play.metrics.Metrics
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{verify, when}
-import org.scalatestplus.mockito.MockitoSugar
-import org.scalatestplus.play.PlaySpec
 import play.api.http.Status
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
+import uk.gov.hmrc.customs.financials.emailthrottler.utils.SpecBase
 import uk.gov.hmrc.http._
 
+import java.time.OffsetDateTime
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class MetricsReporterServiceSpec extends PlaySpec with MockitoSugar with FutureAwaits with DefaultAwaitTimeout {
-
-  class MockedMetricsReporterScenario() {
-
-    val mockDateTimeService = mock[DateTimeService]
-    val startTimestamp = OffsetDateTime.parse("2018-11-09T17:15:30+01:00")
-    val endTimestamp = OffsetDateTime.parse("2018-11-09T17:15:35+01:00")
-    val elapsedTimeInMillis = 5000L // endTimestamp - startTimestamp
-    when(mockDateTimeService.getTimeStamp)
-      .thenReturn(startTimestamp)
-      .thenReturn(endTimestamp)
-
-    val mockHistogram = mock[Histogram]
-    val mockCounter = mock[Counter]
-    when(mockCounter.inc()).thenCallRealMethod()
-
-    val mockRegistry = mock[MetricRegistry]
-    when(mockRegistry.histogram(ArgumentMatchers.any())).thenReturn(mockHistogram)
-    when(mockRegistry.counter(ArgumentMatchers.any())).thenReturn(mockCounter)
-
-    val mockMetrics = mock[Metrics]
-    when(mockMetrics.defaultRegistry).thenReturn(mockRegistry)
-
-    val metricsReporterService = new MetricsReporterService(mockMetrics, mockDateTimeService)
-  }
-
+class MetricsReporterServiceSpec extends SpecBase {
   "MetricsReporterService" should {
 
     "Email Queue metrics" should {
-      "reportSuccessfulEnqueueJob" in new MockedMetricsReporterScenario() {
+      "reportSuccessfulEnqueueJob" in new Setup {
         metricsReporterService.reportSuccessfulEnqueueJob()
         verify(mockRegistry).counter(ArgumentMatchers.eq("email-queue.enqueue-send-email-job-in-mongo-successful"))
         verify(mockCounter).inc()
       }
-      "reportFailedEnqueueJob" in new MockedMetricsReporterScenario() {
+      "reportFailedEnqueueJob" in new Setup {
         metricsReporterService.reportFailedEnqueueJob()
         verify(mockRegistry).counter(ArgumentMatchers.eq("email-queue.enqueue-send-email-job-in-mongo-failed"))
         verify(mockCounter).inc()
       }
-      "reportSuccessfulMarkJobForProcessing" in new MockedMetricsReporterScenario() {
+      "reportSuccessfulMarkJobForProcessing" in new Setup {
         metricsReporterService.reportSuccessfulMarkJobForProcessing()
         verify(mockRegistry).counter(ArgumentMatchers.eq("email-queue.mark-oldest-send-email-job-for-processing-in-mongo-successful"))
         verify(mockCounter).inc()
       }
-      "reportFailedMarkJobForProcessing" in new MockedMetricsReporterScenario() {
+      "reportFailedMarkJobForProcessing" in new Setup {
         metricsReporterService.reportFailedMarkJobForProcessing()
         verify(mockRegistry).counter(ArgumentMatchers.eq("email-queue.mark-oldest-send-email-job-for-processing-in-mongo-failed"))
         verify(mockCounter).inc()
       }
-      "reportSuccessfulRemoveCompletedJob" in new MockedMetricsReporterScenario() {
+      "reportSuccessfulRemoveCompletedJob" in new Setup {
         metricsReporterService.reportSuccessfullyRemoveCompletedJob()
         verify(mockRegistry).counter(ArgumentMatchers.eq("email-queue.delete-completed-send-email-job-from-mongo-successful"))
         verify(mockCounter).inc()
       }
-      "reportFailedRemoveCompletedJob" in new MockedMetricsReporterScenario() {
+      "reportFailedRemoveCompletedJob" in new Setup {
         metricsReporterService.reportFailedToRemoveCompletedJob()
         verify(mockRegistry).counter(ArgumentMatchers.eq("email-queue.delete-completed-send-email-job-from-mongo-failed"))
         verify(mockCounter).inc()
@@ -94,7 +66,7 @@ class MetricsReporterServiceSpec extends PlaySpec with MockitoSugar with FutureA
 
     "withResponseTimeLogging" should {
 
-      "log successful call metrics" in new MockedMetricsReporterScenario() {
+      "log successful call metrics" in new Setup {
         await {
           metricsReporterService.withResponseTimeLogging("foo") {
             Future.successful("OK")
@@ -104,7 +76,7 @@ class MetricsReporterServiceSpec extends PlaySpec with MockitoSugar with FutureA
         verify(mockHistogram).update(elapsedTimeInMillis)
       }
 
-      "log default error during call metrics" in new MockedMetricsReporterScenario() {
+      "log default error during call metrics" in new Setup {
         assertThrows[InternalServerException] {
           await {
             metricsReporterService.withResponseTimeLogging("bar") {
@@ -116,7 +88,7 @@ class MetricsReporterServiceSpec extends PlaySpec with MockitoSugar with FutureA
         verify(mockHistogram).update(elapsedTimeInMillis)
       }
 
-      "log not found call metrics" in new MockedMetricsReporterScenario() {
+      "log not found call metrics" in new Setup {
         assertThrows[NotFoundException] {
           await {
             metricsReporterService.withResponseTimeLogging("bar") {
@@ -128,7 +100,7 @@ class MetricsReporterServiceSpec extends PlaySpec with MockitoSugar with FutureA
         verify(mockHistogram).update(elapsedTimeInMillis)
       }
 
-      "log bad request error call metrics" in new MockedMetricsReporterScenario() {
+      "log bad request error call metrics" in new Setup {
         assertThrows[BadRequestException] {
           await {
             metricsReporterService.withResponseTimeLogging("bar") {
@@ -140,11 +112,11 @@ class MetricsReporterServiceSpec extends PlaySpec with MockitoSugar with FutureA
         verify(mockHistogram).update(elapsedTimeInMillis)
       }
 
-      "log 5xx error call metrics" in new MockedMetricsReporterScenario() {
-        assertThrows[Upstream5xxResponse] {
+      "log 5xx error call metrics" in new Setup {
+        assertThrows[UpstreamErrorResponse] {
           await {
             metricsReporterService.withResponseTimeLogging("bar") {
-              Future.failed(new Upstream5xxResponse("boom", Status.SERVICE_UNAVAILABLE, Status.NOT_IMPLEMENTED))
+              Future.failed(UpstreamErrorResponse("failure", Status.SERVICE_UNAVAILABLE, Status.NOT_IMPLEMENTED))
             }
           }
         }
@@ -152,11 +124,11 @@ class MetricsReporterServiceSpec extends PlaySpec with MockitoSugar with FutureA
         verify(mockHistogram).update(elapsedTimeInMillis)
       }
 
-      "log 4xx error call metrics" in new MockedMetricsReporterScenario() {
-        assertThrows[Upstream4xxResponse] {
+      "log 4xx error call metrics" in new Setup {
+        assertThrows[UpstreamErrorResponse] {
           await {
             metricsReporterService.withResponseTimeLogging("bar") {
-              Future.failed(new Upstream4xxResponse("boom", Status.FORBIDDEN, Status.NOT_IMPLEMENTED))
+              Future.failed(UpstreamErrorResponse("failure", Status.FORBIDDEN, Status.NOT_IMPLEMENTED))
             }
           }
         }
@@ -166,5 +138,28 @@ class MetricsReporterServiceSpec extends PlaySpec with MockitoSugar with FutureA
 
     }
 
+  }
+
+  trait Setup {
+    val mockDateTimeService: DateTimeService = mock[DateTimeService]
+    val startTimestamp: OffsetDateTime = OffsetDateTime.parse("2018-11-09T17:15:30+01:00")
+    val endTimestamp: OffsetDateTime = OffsetDateTime.parse("2018-11-09T17:15:35+01:00")
+    val elapsedTimeInMillis: Long = 5000L // endTimestamp - startTimestamp
+    when(mockDateTimeService.getTimeStamp)
+      .thenReturn(startTimestamp)
+      .thenReturn(endTimestamp)
+
+    val mockHistogram: Histogram = mock[Histogram]
+    val mockCounter: Counter = mock[Counter]
+    when(mockCounter.inc()).thenCallRealMethod()
+
+    val mockRegistry: MetricRegistry = mock[MetricRegistry]
+    when(mockRegistry.histogram(ArgumentMatchers.any())).thenReturn(mockHistogram)
+    when(mockRegistry.counter(ArgumentMatchers.any())).thenReturn(mockCounter)
+
+    val mockMetrics: Metrics = mock[Metrics]
+    when(mockMetrics.defaultRegistry).thenReturn(mockRegistry)
+
+    val metricsReporterService = new MetricsReporterService(mockMetrics, mockDateTimeService)
   }
 }

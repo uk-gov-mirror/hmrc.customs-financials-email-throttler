@@ -16,37 +16,34 @@
 
 package uk.gov.hmrc.customs.financials.emailthrottler.services
 
-import java.time.{Instant, OffsetDateTime, ZoneOffset}
 import org.mockito.ArgumentMatchers
 import org.mockito.Mockito.{spy, verify, when}
-import org.scalatest.{BeforeAndAfterEach, MustMatchers, WordSpec}
-import org.scalatestplus.mockito.MockitoSugar
+import org.scalatest.BeforeAndAfterEach
 import play.api.libs.json.Json
-import play.api.test.{DefaultAwaitTimeout, FutureAwaits}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
-import uk.gov.hmrc.customs.financials.emailthrottler.domain.{EmailAddress, EmailRequest}
+import uk.gov.hmrc.customs.financials.emailthrottler.models.{EmailAddress, EmailRequest}
+import uk.gov.hmrc.customs.financials.emailthrottler.utils.SpecBase
 import uk.gov.hmrc.mongo.MongoConnector
 
+import java.time.{OffsetDateTime, ZoneOffset}
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-//noinspection TypeAnnotation
-class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with DefaultAwaitTimeout with BeforeAndAfterEach with MustMatchers {
+class EmailQueueSpec extends SpecBase with BeforeAndAfterEach {
 
-  import scala.concurrent.ExecutionContext.Implicits.global
-
-  val mockAppConfig = mock[AppConfig]
-  val mockDateTimeService = mock[DateTimeService]
+  val mockAppConfig: AppConfig = mock[AppConfig]
+  val mockDateTimeService: DateTimeService = mock[DateTimeService]
   when(mockDateTimeService.getTimeStamp).thenCallRealMethod()
 
-  val reactiveMongoComponent = new ReactiveMongoComponent {
+  val reactiveMongoComponent: ReactiveMongoComponent = new ReactiveMongoComponent {
     val mongoUri = "mongodb://127.0.0.1:27017/test-customs-email-throttler"
 
     override def mongoConnector: MongoConnector = MongoConnector(mongoUri)
   }
 
-  val metricsReporter = mock[MetricsReporterService]
+  val metricsReporter: MetricsReporterService = mock[MetricsReporterService]
   val emailQueue = new EmailQueue(reactiveMongoComponent, mockAppConfig, mockDateTimeService, metricsReporter)
 
   override def beforeEach: Unit = {
@@ -54,10 +51,8 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
   }
 
   "EmailAddress" should {
-
     "obfuscate toString" in {
       val emailAddress = EmailAddress("test@nowhere")
-
       assert(emailAddress.toString() == "************")
     }
   }
@@ -76,8 +71,6 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
       }
 
       "insert multiple email job with same time stamp into collection" in {
-        val timeStamp = OffsetDateTime.ofInstant( Instant.now() , ZoneOffset.UTC)
-        when(mockDateTimeService.getTimeStamp).thenReturn(timeStamp)
         val emailRequest = EmailRequest(List.empty, "", Map.empty, force = false, None, None)
         val eventualResults = (1 to 10).map(_ => emailQueue.enqueueJob(emailRequest))
         await(Future.sequence(eventualResults))
@@ -89,14 +82,6 @@ class EmailQueueSpec extends WordSpec with MockitoSugar with FutureAwaits with D
         spyEmailQueue.deleteJob(BSONObjectID.generate())
 
         verify(spyEmailQueue).removeById(ArgumentMatchers.any(), ArgumentMatchers.any())(ArgumentMatchers.any())
-      }
-
-      "audit requests and insert result" in {
-        pending
-      }
-
-      "audit queue length" in {
-        pending
       }
 
       "get oldest, not processed, send email job" in {

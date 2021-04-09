@@ -19,35 +19,17 @@ package uk.gov.hmrc.customs.financials.emailthrottler.services
 import org.mockito.ArgumentMatchers.{eq => is, _}
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
-import org.scalatest._
-import org.scalatest.mockito.MockitoSugar
 import play.api.http.Status
 import play.api.libs.json.JsString
-import play.api.test._
 import uk.gov.hmrc.customs.financials.emailthrottler.config.AppConfig
-import uk.gov.hmrc.customs.financials.emailthrottler.domain._
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.customs.financials.emailthrottler.models._
+import uk.gov.hmrc.customs.financials.emailthrottler.utils.SpecBase
+import uk.gov.hmrc.http.{HttpClient, _}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class EmailNotificationServiceSpec extends WordSpec with MockitoAnswerSugar with MockitoSugar with MustMatchers with FutureAwaits with DefaultAwaitTimeout {
-
-  trait EmailNotificationServiceScenario {
-    implicit val mockAppConfig = mock[AppConfig]
-    implicit val mockHttpClient: HttpClient = mock[HttpClient]
-
-    val mockMetricsReporterService = mock[MetricsReporterService]
-    when(mockMetricsReporterService.withResponseTimeLogging(any())(any())(any()))
-      .thenAnswer((i: InvocationOnMock) => {i.getArgument[Future[JsString]](1)})
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-    implicit val hc: HeaderCarrier = HeaderCarrier()
-
-    val emailNotificationService = new EmailNotificationService(mockHttpClient, mockMetricsReporterService)
-
-    FeatureSwitch.EmailNotifications.enable()
-  }
+class EmailNotificationServiceSpec extends SpecBase {
 
   "sendEmail" should {
     "send the email request" in new EmailNotificationServiceScenario {
@@ -55,7 +37,7 @@ class EmailNotificationServiceSpec extends WordSpec with MockitoAnswerSugar with
       val request = EmailRequest(List(EmailAddress("toAddress")), "templateId")
 
       when[Future[HttpResponse]](mockHttpClient.POST(any(), is(request), any())(any(), any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(Status.ACCEPTED)))
+        .thenReturn(Future.successful(HttpResponse(Status.ACCEPTED, "")))
 
       await(emailNotificationService.sendEmail(request)) mustBe true
     }
@@ -64,7 +46,7 @@ class EmailNotificationServiceSpec extends WordSpec with MockitoAnswerSugar with
       val request = EmailRequest(List(EmailAddress("incorrectEmailAddress")), "templateId")
 
       when[Future[HttpResponse]](mockHttpClient.POST(any(), any(), any())(any(), any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(Status.BAD_REQUEST)))
+        .thenReturn(Future.successful(HttpResponse(Status.BAD_REQUEST, "")))
 
       await(emailNotificationService.sendEmail(request)) mustBe false
     }
@@ -77,5 +59,18 @@ class EmailNotificationServiceSpec extends WordSpec with MockitoAnswerSugar with
 
       await(emailNotificationService.sendEmail(request)) mustBe false
     }
+  }
+
+  trait EmailNotificationServiceScenario {
+    implicit val mockAppConfig: AppConfig = mock[AppConfig]
+    implicit val mockHttpClient: HttpClient = mock[HttpClient]
+
+    val mockMetricsReporterService: MetricsReporterService = mock[MetricsReporterService]
+    when(mockMetricsReporterService.withResponseTimeLogging(any())(any())(any()))
+      .thenAnswer((i: InvocationOnMock) => {i.getArgument[Future[JsString]](1)})
+
+    implicit val hc: HeaderCarrier = HeaderCarrier()
+
+    val emailNotificationService = new EmailNotificationService(mockHttpClient, mockMetricsReporterService)
   }
 }
