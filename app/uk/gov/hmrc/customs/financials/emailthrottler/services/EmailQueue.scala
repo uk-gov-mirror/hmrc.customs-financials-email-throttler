@@ -105,8 +105,8 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
   }
 
   def resetProcessing: Future[Unit] = {
-    logger.info("resetProcessing executing")
     val maxAge = dateTimeService.getTimeStamp.minusMinutes(appConfig.emailMaxAgeMins)
+    logger.info(s"resetProcessing executing: $maxAge")
 
     collection.update(ordered = false).one(
       Json.obj("$and" -> Json.arr(
@@ -114,7 +114,7 @@ class EmailQueue @Inject()(mongoComponent: ReactiveMongoComponent,
         Json.obj("timeStampAndCRL" -> Json.obj("$lt" -> maxAge)))
       ),
       Json.obj("$set" -> Json.obj("processing" -> Json.toJsFieldJsValueWrapper(false))),
-      upsert = true,
+      upsert = false,
       multi = true
     ).map(_ => ())
   }
