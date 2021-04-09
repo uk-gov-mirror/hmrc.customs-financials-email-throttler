@@ -36,7 +36,7 @@ class Scheduler @Inject()(appConfig: AppConfig,
     emailJobHandler.processJob()
   }
 
-  actorSystem.scheduler.schedule(initialDelay = 0 minutes, interval = appConfig.housekeepingHours minutes) {
+  actorSystem.scheduler.schedule(initialDelay = 10 minutes, interval = appConfig.housekeepingHours minutes) {
     logger.info("housekeeping triggered")
     emailJobHandler.houseKeeping()
   }
